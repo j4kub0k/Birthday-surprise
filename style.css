@@ -155,22 +155,29 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 .panel h2 { text-align: left; }
 .retro-card h2 { transform-origin: center; }
 
-/* Flickering sparkles around "Happy Birthday" headers (spans added by script.js) */
-.sparkle-wrap { position: relative; display: inline-block; max-width: 100%; }
-.sparkle {
+/* Flickering glitter over "Happy Birthday" headers (specks added by script.js) */
+.glitter-wrap { position: relative; display: inline-block; max-width: 100%; }
+.glitter {
   position: absolute;
   pointer-events: none;
-  color: #fff;
-  line-height: 1;
-  text-shadow: 0 0 6px #fff, 0 0 12px var(--accent);
-  animation: twinkle var(--dur, 1.2s) ease-in-out var(--delay, 0s) infinite;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  background: var(--col, #fff);
+  border-radius: 1px;
+  box-shadow: 0 0 4px var(--col, #fff);
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: glint var(--dur, 0.9s) steps(1, end) var(--delay, 0s) infinite;
 }
-@keyframes twinkle {
-  0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
-  40% { opacity: 1; transform: scale(1) rotate(25deg); }
-  55% { opacity: 0.3; }
-  70% { opacity: 1; transform: scale(0.8) rotate(45deg); }
+@keyframes glint {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  25% { opacity: 0.2; }
+  40% { opacity: 1; transform: rotate(45deg) scale(1.6); }
+  55% { opacity: 0; }
+  75% { opacity: 0.8; }
+  90% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sparkle { animation: none; opacity: 0.8; }
+  .glitter { animation: none; opacity: 0.7; }
 }
