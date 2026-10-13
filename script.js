@@ -1,8 +1,8 @@
-// Show the gift (card, movie planner, playlist). Triggered by the Unity game on victory (Phase 4).
+// Show the surprise section. Triggered by the Unity game on victory (Phase 4).
 function revealSurprise() {
-  const sections = document.querySelectorAll('.after-win');
-  sections.forEach((el) => { el.hidden = false; });
-  sections[0].scrollIntoView({ behavior: 'smooth' });
+  const surprise = document.getElementById('surprise');
+  surprise.hidden = false;
+  surprise.scrollIntoView({ behavior: 'smooth' });
 }
 
 // The Unity build will post {type: "victory"} from inside its iframe.

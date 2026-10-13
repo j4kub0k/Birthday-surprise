@@ -27,10 +27,9 @@ main { max-width: 640px; margin: 0 auto; display: grid; gap: var(--gutter); padd
 .panel[hidden] { display: none; }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
 
-.game-placeholder,
-.placeholder-box {
+.game-placeholder {
+  aspect-ratio: 1 / 1;
   display: grid;
-  min-height: 120px;
   place-items: center;
   border: 2px dashed var(--accent);
   border-radius: 8px;
@@ -67,8 +66,6 @@ img {
   background: #3a2760;
   border: 2px dashed var(--accent); /* placeholder look until a real image loads */
 }
-
-.game-placeholder { aspect-ratio: 1 / 1; }
 
 .placeholder-box {
   min-height: 160px;
