@@ -1,0 +1,71 @@
+:root {
+  --bg: #1b1030;
+  --panel: #2a1a4a;
+  --accent: #ffcc33;
+  --text: #fff8e7;
+  --gutter: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  padding: env(safe-area-inset-top) var(--gutter) env(safe-area-inset-bottom);
+}
+
+.hero { text-align: center; padding: 32px 0 16px; }
+.hero h1 { margin: 0; color: var(--accent); font-size: clamp(1.6rem, 7vw, 2.6rem); }
+.tagline { margin: 8px 0 0; opacity: 0.85; }
+
+main { max-width: 640px; margin: 0 auto; display: grid; gap: var(--gutter); padding-bottom: 32px; }
+
+.panel { background: var(--panel); border-radius: 12px; padding: var(--gutter); }
+.panel[hidden] { display: none; }
+.panel h2 { margin-top: 0; font-size: 1.2rem; }
+
+.game-placeholder {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  opacity: 0.7;
+}
+
+.debug {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  font-size: 1rem;
+}
+
+/* Phase 2 */
+.retro-card {
+  border: 4px double var(--accent);
+  text-align: center;
+  font-family: "Courier New", monospace;
+}
+
+figure { margin: 12px 0 0; }
+figcaption { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; text-align: center; }
+
+img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #3a2760;
+  border: 2px dashed var(--accent); /* placeholder look until a real image loads */
+}
+
+.archive-grid { display: grid; gap: var(--gutter); }
+@media (min-width: 560px) { .archive-grid { grid-template-columns: repeat(3, 1fr); } }
