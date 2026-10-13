@@ -181,3 +181,13 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .glitter { animation: none; opacity: 0.7; }
 }
+
+/* Movie Night Planner */
+.planner { display: grid; gap: var(--gutter); }
+@media (min-width: 560px) { .planner { grid-template-columns: 1fr 1fr; } }
+.planner h3 { margin: 0 0 8px; font-size: 1rem; color: var(--accent); }
+.planner-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.planner-list li { background: rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.planner-list small { display: block; opacity: 0.75; }
+.planner-list .muted { opacity: 0.7; font-style: italic; }
+.button.disabled { opacity: 0.5; pointer-events: none; }

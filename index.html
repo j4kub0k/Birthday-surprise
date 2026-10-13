@@ -38,8 +38,18 @@
 
     <section id="movies" class="panel">
       <h2 data-sparkle>Movie Night Planner</h2>
-      <!-- Phase 5: date and vibe selector, Instagram message, copy/open buttons -->
-      <div class="placeholder-box">Movie planning goes here</div>
+      <div class="planner">
+        <div class="planner-col">
+          <h3>Movies we want to watch</h3>
+          <ul id="movie-list" class="planner-list"><li class="muted">Loading...</li></ul>
+          <a id="add-movie" class="button" href="#" target="_blank" rel="noopener">+ Add a movie</a>
+        </div>
+        <div class="planner-col">
+          <h3>Dates we're free</h3>
+          <ul id="date-list" class="planner-list"><li class="muted">Loading...</li></ul>
+          <a id="add-date" class="button" href="#" target="_blank" rel="noopener">+ Add a free date</a>
+        </div>
+      </div>
     </section>
 
     <section id="game" class="panel">
@@ -56,6 +66,7 @@
     </section>
   </main>
 
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
