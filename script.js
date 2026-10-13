@@ -125,8 +125,10 @@ document.getElementById('fake-victory').addEventListener('click', revealSurprise
     if (!csvUrl) { setMessage(list, 'Not connected yet.'); return; }
     try {
       const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error(res.status);
-      const rows = parseCsv(await res.text()).slice(1).reverse(); // drop header, newest first
+      if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return; }
+      const text = await res.text();
+      if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return; }
+      const rows = parseCsv(text).slice(1).reverse(); // drop header, newest first
       if (!rows.length) { setMessage(list, emptyText); return; }
       list.innerHTML = '';
       rows.forEach((r) => {
@@ -142,8 +144,10 @@ document.getElementById('fake-victory').addEventListener('click', revealSurprise
         }
         list.appendChild(li);
       });
+      if (!list.children.length) setMessage(list, emptyText);
     } catch (e) {
-      setMessage(list, 'Could not load the list right now.');
+      console.error('Planner: failed to load', csvUrl, e);
+      setMessage(list, 'Could not reach Google (network or blocked). Try reloading.');
     }
   }
 
