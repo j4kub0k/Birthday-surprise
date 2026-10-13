@@ -91,3 +91,21 @@ a { color: var(--accent); }
   text-decoration: none;
   font-weight: 600;
 }
+
+/* Dog corner */
+summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.dog-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gutter);
+  padding: var(--gutter) 4px 4px;
+}
+@media (min-width: 560px) { .dog-gallery { grid-template-columns: repeat(3, 1fr); } }
+.dog-gallery img { aspect-ratio: 1 / 1; }
