@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Happy Birthday!</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <h1>Happy Birthday, [NAME]!</h1>
+    <p class="tagline">A little surprise is waiting for you...</p>
+  </header>
+
+  <main>
+    <section id="card" class="panel">
+      <h2>Your card</h2>
+      <p>Retro birthday card goes here (Phase 2).</p>
+    </section>
+
+    <section id="game" class="panel">
+      <h2>Play to unlock your gift</h2>
+      <!-- Phase 3: Unity WebGL build will be embedded here, e.g. <iframe src="game/index.html"> -->
+      <div class="game-placeholder">Game coming soon</div>
+      <button id="fake-victory" type="button" class="debug">Debug: fake victory</button>
+    </section>
+
+    <section id="surprise" class="panel" hidden>
+      <h2>You won!</h2>
+      <p>Treasure chest and prizes go here (Phase 4).</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
