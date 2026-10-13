@@ -13,12 +13,34 @@
   </header>
 
   <main>
+    <section id="card" class="panel retro-card">
+      <h2>&#9733; Happy Birthday! &#9733;</h2>
+      <p>[Your birthday message goes here]</p>
+      <figure>
+        <img src="images/her-photo.jpg" alt="Her funny photo">
+        <figcaption>[Funny photo caption]</figcaption>
+      </figure>
+    </section>
+
     <section id="dogs" class="panel">
       <h2>Dog Appreciation Corner</h2>
       <figure>
         <img src="images/dog.jpg" alt="Dog">
         <figcaption>[Dog caption]</figcaption>
       </figure>
+    </section>
+
+    <section id="playlist" class="panel">
+      <h2>Birthday Playlist</h2>
+      <!-- Replace the placeholder with your Spotify embed:
+           <iframe src="https://open.spotify.com/embed/playlist/PLAYLIST_ID" width="100%" height="352" frameborder="0" allow="encrypted-media" loading="lazy"></iframe> -->
+      <div class="placeholder-box">Spotify playlist goes here</div>
+    </section>
+
+    <section id="movies" class="panel">
+      <h2>Movie Night Planner</h2>
+      <!-- Phase 5: date and vibe selector, Instagram message, copy/open buttons -->
+      <div class="placeholder-box">Movie planning goes here</div>
     </section>
 
     <section id="game" class="panel">
@@ -28,14 +50,10 @@
       <button id="fake-victory" type="button" class="debug">Debug: fake victory</button>
     </section>
 
-    <!-- The gift: the retro card is revealed after winning the game -->
-    <section id="surprise" class="panel retro-card" hidden>
-      <h2>&#9733; Happy Birthday! &#9733;</h2>
-      <p>[Your birthday message goes here]</p>
-      <figure>
-        <img src="images/her-photo.jpg" alt="Her funny photo">
-        <figcaption>[Funny photo caption]</figcaption>
-      </figure>
+    <!-- The hidden gift: the movie pass is revealed after winning the game -->
+    <section id="surprise" class="panel" hidden>
+      <h2>You won!</h2>
+      <div class="placeholder-box">Custom movie pass goes here (Phase 4)</div>
     </section>
   </main>
 
