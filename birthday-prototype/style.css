@@ -1,0 +1,193 @@
+:root {
+  --bg: #1a03ec;
+  --panel: #0508c2;
+  --accent: #ffcc33;
+  --text: #fff8e7;
+  --gutter: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  padding: env(safe-area-inset-top) var(--gutter) env(safe-area-inset-bottom);
+}
+
+.hero { text-align: center; padding: 32px 0 16px; }
+.tagline { margin: 8px 0 0; opacity: 0.85; }
+
+main { max-width: 640px; margin: 0 auto; display: grid; gap: var(--gutter); padding-bottom: 32px; }
+
+.panel { background: var(--panel); border-radius: 12px; padding: var(--gutter); }
+.panel[hidden] { display: none; }
+
+.game-placeholder {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  opacity: 0.7;
+}
+
+.debug {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  font-size: 1rem;
+}
+
+/* Phase 2 */
+.retro-card {
+  border: 4px double var(--accent);
+  text-align: center;
+  font-family: "Courier New", monospace;
+}
+
+figure { margin: 12px 0 0; }
+figcaption { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; text-align: center; }
+
+img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #1400f3;
+  border: 2px dashed var(--accent); /* placeholder look until a real image loads */
+}
+
+.placeholder-box {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: var(--gutter);
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  opacity: 0.7;
+}
+
+a { color: var(--accent); }
+
+.button {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Dog corner: collapsible, with an obvious tap affordance */
+summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
+}
+summary::-webkit-details-marker { display: none; }
+summary h2 { flex: 1 1 14em; margin-bottom: 0.2em; }
+summary::after {
+  content: "TAP TO OPEN \25BC";
+  flex: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.8rem;
+  font-weight: 700;
+  animation: nudge 1.6s ease-in-out infinite;
+}
+details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
+@keyframes nudge { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { summary::after { animation: none; } }
+.dog-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gutter);
+  padding: var(--gutter) 4px 4px;
+}
+@media (min-width: 560px) { .dog-gallery { grid-template-columns: repeat(3, 1fr); } }
+.dog-gallery img { aspect-ratio: 1 / 1; }
+
+/* Retro WordArt: applied to every header (and usable via <span class="wordart">) */
+.wordart,
+.hero h1,
+.panel h2 {
+  display: inline-block;
+  max-width: 100%;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.15;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+  /* room for the tilt and the 3D shadow so it doesn't spill onto neighbouring boxes */
+  padding: 0.1em 0.3em 0.3em 0.1em;
+  margin: 0.2em 0 0.5em;
+  transform: rotate(var(--wa-rot, -2deg)) skewX(var(--wa-skew, -6deg));
+  transform-origin: left center;
+  background: linear-gradient(180deg, var(--wa-c1, #ff2d2d) 0%, var(--wa-c2, #ffcc33) 35%, var(--wa-c3, #33ff66) 65%, var(--wa-c4, #33ccff) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #000;
+  filter: drop-shadow(2px 2px 0 #000) drop-shadow(4px 4px 0 var(--wa-shadow, #ff00aa));
+}
+.hero h1 { font-size: clamp(1.8rem, 9vw, 2.8rem); margin: 0 0 0.2em; }
+.panel h2 { text-align: left; }
+.retro-card h2 { transform-origin: center; }
+
+/* Flickering glitter over "Happy Birthday" headers (specks added by script.js) */
+.glitter-wrap { position: relative; display: inline-block; max-width: 100%; }
+.glitter {
+  position: absolute;
+  pointer-events: none;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  background: var(--col, #fff);
+  border-radius: 1px;
+  box-shadow: 0 0 4px var(--col, #fff);
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: glint var(--dur, 0.9s) steps(1, end) var(--delay, 0s) infinite;
+}
+@keyframes glint {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  25% { opacity: 0.2; }
+  40% { opacity: 1; transform: rotate(45deg) scale(1.6); }
+  55% { opacity: 0; }
+  75% { opacity: 0.8; }
+  90% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glitter { animation: none; opacity: 0.7; }
+}
+
+/* Movie Night Planner */
+.planner { display: grid; gap: var(--gutter); }
+@media (min-width: 560px) { .planner { grid-template-columns: 1fr 1fr; } }
+.planner h3 { margin: 0 0 8px; font-size: 1rem; color: var(--accent); }
+.planner-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.planner-list li { background: rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.planner-list small { display: block; opacity: 0.75; }
+.planner-list .muted { opacity: 0.7; font-style: italic; }
+.button.disabled { opacity: 0.5; pointer-events: none; }
