@@ -79,3 +79,15 @@ img {
 }
 
 a { color: var(--accent); }
+
+.button {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  text-decoration: none;
+  font-weight: 600;
+}
