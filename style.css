@@ -109,3 +109,21 @@ summary {
 }
 @media (min-width: 560px) { .dog-gallery { grid-template-columns: repeat(3, 1fr); } }
 .dog-gallery img { aspect-ratio: 1 / 1; }
+
+/* Retro WordArt (reusable: <span class="wordart">) */
+.wordart {
+  display: inline-block;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.5rem, 8vw, 2.4rem);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.1;
+  letter-spacing: 1px;
+  transform: rotate(-3deg) skewX(-6deg);
+  background: linear-gradient(180deg, #ff2d2d 0%, #ffcc33 35%, #33ff66 65%, #33ccff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #000;
+  filter: drop-shadow(2px 2px 0 #000) drop-shadow(4px 4px 0 #ff00aa) drop-shadow(6px 6px 0 #000);
+}
