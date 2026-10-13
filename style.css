@@ -1,6 +1,6 @@
 :root {
-  --bg: #1b1030;
-  --panel: #2a1a4a;
+  --bg: #1a03ec;
+  --panel: #0508c2;
   --accent: #ffcc33;
   --text: #fff8e7;
   --gutter: 16px;
@@ -63,7 +63,7 @@ img {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 8px;
-  background: #3a2760;
+  background: #1400f3;
   border: 2px dashed var(--accent); /* placeholder look until a real image loads */
 }
 
