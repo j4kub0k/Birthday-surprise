@@ -66,6 +66,3 @@ img {
   background: #3a2760;
   border: 2px dashed var(--accent); /* placeholder look until a real image loads */
 }
-
-.archive-grid { display: grid; gap: var(--gutter); }
-@media (min-width: 560px) { .archive-grid { grid-template-columns: repeat(3, 1fr); } }
