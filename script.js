@@ -30,3 +30,27 @@ document.getElementById('fake-victory').addEventListener('click', revealSurprise
     gallery.appendChild(img);
   });
 })();
+
+// Give every WordArt header its own random look.
+(function randomiseWordArt() {
+  const palettes = [
+    ['#ff2d2d', '#ffcc33', '#33ff66', '#33ccff'],
+    ['#ff00aa', '#ff7a00', '#ffee00', '#ffffff'],
+    ['#00f5d4', '#00bbf9', '#9b5de5', '#f15bb5'],
+    ['#ffffff', '#ffe066', '#ff9f1c', '#e71d36'],
+    ['#b8ff3d', '#2ee6a6', '#2aa9ff', '#7b4dff'],
+  ];
+  const shadows = ['#ff00aa', '#00e5ff', '#ff6a00', '#7cff00', '#b100ff'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const rand = (min, max) => (Math.random() * (max - min) + min).toFixed(1);
+  document.querySelectorAll('.hero h1, .panel h2, .wordart').forEach((el) => {
+    const p = pick(palettes);
+    el.style.setProperty('--wa-c1', p[0]);
+    el.style.setProperty('--wa-c2', p[1]);
+    el.style.setProperty('--wa-c3', p[2]);
+    el.style.setProperty('--wa-c4', p[3]);
+    el.style.setProperty('--wa-shadow', pick(shadows));
+    el.style.setProperty('--wa-rot', rand(-4, 2) + 'deg');
+    el.style.setProperty('--wa-skew', rand(-9, -2) + 'deg');
+  });
+})();

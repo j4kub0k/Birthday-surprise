@@ -90,15 +90,33 @@ a { color: var(--accent); }
   font-weight: 600;
 }
 
-/* Dog corner */
+/* Dog corner: collapsible, with an obvious tap affordance */
 summary {
   cursor: pointer;
-  min-height: 44px;
+  list-style: none;
   display: flex;
   align-items: center;
-  font-size: 1.2rem;
-  font-weight: 600;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
 }
+summary::-webkit-details-marker { display: none; }
+summary h2 { flex: 1 1 14em; margin-bottom: 0.2em; }
+summary::after {
+  content: "TAP TO OPEN \25BC";
+  flex: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.8rem;
+  font-weight: 700;
+  animation: nudge 1.6s ease-in-out infinite;
+}
+details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
+@keyframes nudge { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { summary::after { animation: none; } }
 .dog-gallery {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -124,16 +142,15 @@ summary {
   /* room for the tilt and the 3D shadow so it doesn't spill onto neighbouring boxes */
   padding: 0.1em 0.3em 0.3em 0.1em;
   margin: 0.2em 0 0.5em;
-  transform: rotate(-2deg) skewX(-6deg);
+  transform: rotate(var(--wa-rot, -2deg)) skewX(var(--wa-skew, -6deg));
   transform-origin: left center;
-  background: linear-gradient(180deg, #ff2d2d 0%, #ffcc33 35%, #33ff66 65%, #33ccff 100%);
+  background: linear-gradient(180deg, var(--wa-c1, #ff2d2d) 0%, var(--wa-c2, #ffcc33) 35%, var(--wa-c3, #33ff66) 65%, var(--wa-c4, #33ccff) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-stroke: 1.5px #000;
-  filter: drop-shadow(2px 2px 0 #000) drop-shadow(4px 4px 0 #ff00aa);
+  filter: drop-shadow(2px 2px 0 #000) drop-shadow(4px 4px 0 var(--wa-shadow, #ff00aa));
 }
 .hero h1 { font-size: clamp(1.8rem, 9vw, 2.8rem); margin: 0 0 0.2em; }
 .panel h2 { text-align: left; }
 .retro-card h2 { transform-origin: center; }
-summary .wordart { margin: 0; }
