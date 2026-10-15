@@ -118,14 +118,17 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 @keyframes nudge { 50% { transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { summary::after { animation: none; } }
 .dog-gallery {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 22px;
-  padding: var(--gutter) 4px 4px;
+  position: relative;
+  aspect-ratio: 1 / 1.9;
+  max-width: 480px;
+  margin: var(--gutter) auto 0;
 }
-@media (min-width: 560px) { .dog-gallery { grid-template-columns: repeat(3, 1fr); } }
 .dog-gallery img {
+  position: absolute;
   aspect-ratio: 1 / 1;
+  cursor: pointer;
+  transform: rotate(var(--rot, 0deg));
+  transition: transform 0.2s;
   /* retro frame to match the WordArt headers: gold border, white mat, hard pink + black shadow */
   border: 3px solid var(--accent);
   outline: 4px solid #fff;
@@ -199,3 +202,4 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 .planner-list small { display: block; opacity: 0.75; }
 .planner-list .muted { opacity: 0.7; font-style: italic; }
 .button.disabled { opacity: 0.5; pointer-events: none; }
+.dog-gallery img:hover { transform: rotate(var(--rot, 0deg)) scale(1.05); }

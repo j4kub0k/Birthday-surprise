@@ -1,17 +1,35 @@
-// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg), shuffled with a slight random tilt.
+// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg) scattered like prints on a table.
+// Tap a photo to bring it to the front.
 (function buildDogGallery() {
   const gallery = document.getElementById('dog-gallery');
-  const ids = Array.from({ length: 7 }, (_, i) => i + 1);
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-  }
-  ids.forEach((n) => {
+  const COUNT = 7, COLS = 2, ROWS = 4;
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
+  // Pick COUNT of the COLS*ROWS grid cells, so photos spread out but jitter and overlap.
+  const cells = shuffle(Array.from({ length: COLS * ROWS }, (_, i) => i)).slice(0, COUNT);
+  let topZ = COUNT;
+  ids.forEach((n, i) => {
+    const col = cells[i] % COLS, row = Math.floor(cells[i] / COLS);
+    const width = rand(46, 56); // % of the gallery width
+    const left = Math.min(100 - width, Math.max(0, col * (100 - width) + rand(-5, 5)));
+    const top = Math.min(72, Math.max(0, row * 24 + rand(-4, 4))); // % of the gallery height
     const img = document.createElement('img');
     img.src = 'images/dog' + n + '.jpg';
     img.alt = 'Dog photo ' + n;
     img.loading = 'lazy';
-    img.style.transform = 'rotate(' + (Math.random() * 8 - 4).toFixed(1) + 'deg)';
+    img.style.width = width.toFixed(1) + '%';
+    img.style.left = left.toFixed(1) + '%';
+    img.style.top = top.toFixed(1) + '%';
+    img.style.zIndex = i + 1;
+    img.style.setProperty('--rot', rand(-14, 14).toFixed(1) + 'deg');
+    img.addEventListener('click', () => { img.style.zIndex = ++topZ; });
     gallery.appendChild(img);
   });
 })();
