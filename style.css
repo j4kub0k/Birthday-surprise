@@ -138,7 +138,7 @@ main { width: 100%; max-width: 680px; margin: 0 auto; display: grid; gap: 24px; 
 .button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--blue); }
 .button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--blue); }
 .button.disabled { opacity: 0.5; pointer-events: none; }
-a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
+a:focus-visible, summary:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
@@ -230,30 +230,169 @@ summary::after {
 details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 @keyframes nudge { 50% { transform: scale(1.07); } }
 
+/* ---- "DOGEMA" collage board: cream poster paper, big red type, photos in mixed frames ---- */
 .dog-gallery {
   position: relative;
-  aspect-ratio: 1 / 2;
+  aspect-ratio: 1 / 2.5;
   max-width: 480px;
   margin: 22px auto 0;
+  overflow: hidden;
+  color: #111;
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.05) 0 1px, transparent 1.5px) 0 0 / 7px 7px,
+    #e9e3d3;
+  border: 2px solid #000;
+  box-shadow: 8px 8px 0 var(--blue);
 }
-.dog-gallery img {
+.dog-gallery::before {
+  content: "DOGEMA";
   position: absolute;
-  display: block;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  top: 1.4%;
+  left: 4%;
+  font: 900 clamp(2.3rem, 14vw, 4.4rem)/0.9 var(--display);
+  letter-spacing: -0.03em;
+  color: #d9362b;
+}
+.dog-gallery::after {
+  content: "LIVE\A TOUR\A 2026";
+  position: absolute;
+  top: 2.4%;
+  right: 3%;
+  white-space: pre;
+  text-align: right;
+  font: 700 0.62rem/1.35 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.shot {
+  position: absolute;
+  margin: 0;
+  aspect-ratio: 4 / 5;
   cursor: grab;
   touch-action: none; /* a finger drags the photo instead of scrolling the page */
   user-select: none;
-  background: #14199a;
-  /* rounded white frame (BLISS) with a hard blue shadow (HUD) */
-  border: 5px solid #fff;
-  border-radius: 16px;
-  box-shadow: 6px 6px 0 var(--blue);
   transform: rotate(var(--rot, 0deg));
   transition: transform 0.2s;
+  box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.35);
+  --pad-x: 6px; --pad-top: 6px; --pad-bot: 6px;
 }
-.dog-gallery img:hover { transform: rotate(var(--rot, 0deg)) scale(1.03); }
-.dog-gallery img.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.06); transition: none; }
+.shot:hover { transform: rotate(var(--rot, 0deg)) scale(1.03); }
+.shot.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.06); transition: none; }
+.shot img {
+  position: absolute;
+  left: var(--pad-x);
+  top: var(--pad-top);
+  width: calc(100% - 2 * var(--pad-x));
+  height: calc(100% - var(--pad-top) - var(--pad-bot));
+  object-fit: cover;
+  pointer-events: none;
+  background: #bbb;
+}
+.shot span, .shot b, .shot i { font-style: normal; pointer-events: none; }
+
+/* 1. film frame (contact sheet): black strip, sprocket holes, orange edge print */
+.s-film { background: #0b0b0b; --pad-x: 7px; --pad-top: 24px; --pad-bot: 24px; }
+.s-film::before, .s-film::after {
+  content: "";
+  position: absolute;
+  left: 5px; right: 5px;
+  height: 7px;
+  background: repeating-linear-gradient(90deg, #efe7d6 0 6px, transparent 6px 12px);
+  border-radius: 1px;
+}
+.s-film::before { top: 5px; }
+.s-film::after { bottom: 5px; }
+.s-film img { filter: saturate(1.1) contrast(1.05); }
+.cap-t, .cap-b {
+  position: absolute;
+  left: 8px; right: 8px;
+  display: flex;
+  justify-content: space-between;
+  font: 700 8px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: #f0a63a;
+}
+.cap-t { top: 13px; }
+.cap-b { bottom: 13px; }
+
+/* 2. aged paper cut-out: torn edge, sepia print, tape */
+.s-paper {
+  --pad-x: 9px; --pad-top: 14px; --pad-bot: 30px;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.4));
+}
+.s-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #e2d0a8;
+  clip-path: polygon(0 2%, 5% 0, 11% 2%, 18% 0, 26% 1.5%, 34% 0, 42% 2%, 51% 0, 60% 1.5%, 68% 0, 77% 2%, 85% 0, 93% 1.5%, 100% 0,
+    100% 97%, 94% 100%, 86% 98%, 77% 100%, 68% 98.5%, 58% 100%, 49% 98%, 40% 100%, 31% 98.5%, 22% 100%, 13% 98%, 6% 100%, 0 98%);
+}
+.s-paper::after {
+  content: "";
+  position: absolute;
+  top: -7px; left: 34%;
+  width: 32%; height: 16px;
+  background: rgba(255, 252, 225, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transform: rotate(-4deg);
+}
+.s-paper img { filter: sepia(0.55) contrast(1.05); }
+.cap-p {
+  position: absolute;
+  left: 11px; bottom: 8px;
+  font: italic 600 0.8rem/1 Georgia, "Times New Roman", serif;
+  color: #3a2a12;
+}
+
+/* 3. off-white print with a mono caption (poster inset) */
+.s-print { background: #f4f1ea; border: 1px solid #111; --pad-x: 8px; --pad-top: 8px; --pad-bot: 32px; }
+.cap-m {
+  position: absolute;
+  left: 8px; right: 8px; bottom: 10px;
+  font: 700 0.5rem/1 var(--mono);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #111;
+}
+
+/* 4. black-and-white poster print with a thin offset outline */
+.s-bw { background: #fff; border: 1px solid #111; --pad-x: 6px; --pad-top: 6px; --pad-bot: 6px; }
+.s-bw::before { content: ""; position: absolute; inset: -6px 6px 6px -6px; border: 1px solid #111; z-index: -1; }
+.s-bw img { filter: grayscale(1) contrast(1.15); }
+
+/* red rubber stamp on one photo */
+.stamp {
+  position: absolute;
+  right: -8px; top: 10px;
+  padding: 3px 7px;
+  border: 2px solid #d9362b;
+  background: rgba(233, 227, 211, 0.88);
+  color: #d9362b;
+  font: 800 0.62rem/1 var(--mono);
+  letter-spacing: 0.1em;
+  transform: rotate(-9deg);
+  white-space: nowrap;
+}
+
+/* ticket stub */
+.ticket {
+  position: absolute;
+  width: 26%;
+  padding: 8px 6px;
+  display: grid;
+  gap: 3px;
+  text-align: center;
+  background: #f0a63a;
+  border: 2px dashed #111;
+  color: #111;
+  transform: rotate(var(--rot, 0deg));
+  pointer-events: none;
+}
+.ticket b { font: 900 0.7rem/1 var(--display); letter-spacing: 0.06em; }
+.ticket span { font: 700 0.55rem/1 var(--mono); letter-spacing: 0.1em; }
 
 /* ---------- hazard-stripe footer ---------- */
 .hazard {
