@@ -67,7 +67,7 @@
   h1.appendChild(svg);
 })();
 
-// Dog Appreciation Corner ("DOGEMA"): 7 photos (images/dog1.jpg ... dog7.jpg) as frames on movie film strips.
+// Dog Appreciation Corner ("TARA", a DOGEMA film): 7 photos (images/dog1.jpg ... dog7.jpg) as frames on movie film strips.
 // Each row of the board is a strip of film; the photos can be dragged out of it and placed anywhere.
 // The layout is redone at random every time the corner is opened.
 (function dogGallery() {
@@ -80,7 +80,7 @@
   const TOP = 11, SLOT = 22.2;        // first strip row starts at TOP %, each row is SLOT % tall
   const EDGE = 20;                    // px of film edge (sprocket holes + edge print) above and below a photo
   const FRAMES = ['2A', '3', '3A', '4', '4A', '5', '5A'];
-  const WORDS = ['GOOD DOG', 'BEST FRIEND', 'PURE JOY', '10/10', 'TREAT ME', 'NOW SHOWING', 'SOLD OUT'];
+  const WORDS = ['STARRING TARA', 'GOOD DOG', 'BEST FRIEND', 'PURE JOY', '10/10', 'NOW SHOWING', 'SOLD OUT'];
   const NS = 'http://www.w3.org/2000/svg';
   const shuffle = (arr) => {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -137,12 +137,12 @@
       const strip = el('div', 'strip');
       strip.style.top = 'calc(' + (TOP + row * SLOT).toFixed(2) + '% - ' + EDGE + 'px)';
       strip.style.height = 'calc(' + PHOTO_H.toFixed(2) + '% + ' + (EDGE * 2) + 'px)';
-      strip.appendChild(el('span', 'strip-text', ('DOGGO 400 \u25B7 ' + (row * 2 + 1) + ' \u25B7 ' + (row * 2 + 1) + 'A \u25B7 ').repeat(6)));
+      strip.appendChild(el('span', 'strip-text', ('TARA 400 \u25B7 ' + (row * 2 + 1) + ' \u25B7 ' + (row * 2 + 1) + 'A \u25B7 ').repeat(6)));
       gallery.appendChild(strip);
     }
 
-    // some frames look like old black-and-white film, one is a blue monitor tint
-    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'blue']);
+    // some frames look like old black-and-white film, one is warm sepia
+    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'sepia']);
     const stampOn = Math.floor(Math.random() * COUNT);
     let topZ = COUNT + 10;
 
@@ -157,7 +157,7 @@
 
       const img = el('img');
       img.src = 'images/dog' + n + '.jpg';
-      img.alt = 'Dog photo ' + n;
+      img.alt = 'Tara, photo ' + n;
       img.draggable = false;
       shot.appendChild(img);
       shot.appendChild(el('span', 'frame-no', '\u25B7 ' + n + ' / ' + pick(FRAMES)));
@@ -198,7 +198,7 @@
     gallery.appendChild(ticket);
 
     const foot = el('div', 'hud-foot');
-    foot.append(el('span', '', 'TC 00:07:12'), el('span', '', COUNT + ' FRAMES LOADED'));
+    foot.append(el('span', '', 'A DOGEMA FILM'), el('span', '', COUNT + ' FRAMES LOADED'));
     gallery.appendChild(foot);
   }
 
