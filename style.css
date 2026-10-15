@@ -119,14 +119,16 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 @media (prefers-reduced-motion: reduce) { summary::after { animation: none; } }
 .dog-gallery {
   position: relative;
-  aspect-ratio: 1 / 1.9;
+  aspect-ratio: 1 / 2;
   max-width: 480px;
   margin: var(--gutter) auto 0;
 }
 .dog-gallery img {
   position: absolute;
   aspect-ratio: 1 / 1;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none; /* lets a finger drag the photo instead of scrolling the page */
+  user-select: none;
   transform: rotate(var(--rot, 0deg));
   transition: transform 0.2s;
   /* retro frame to match the WordArt headers: gold border, white mat, hard pink + black shadow */
@@ -202,4 +204,5 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 .planner-list small { display: block; opacity: 0.75; }
 .planner-list .muted { opacity: 0.7; font-style: italic; }
 .button.disabled { opacity: 0.5; pointer-events: none; }
-.dog-gallery img:hover { transform: rotate(var(--rot, 0deg)) scale(1.05); }
+.dog-gallery img:hover { transform: rotate(var(--rot, 0deg)) scale(1.03); }
+.dog-gallery img.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.06); transition: none; }
