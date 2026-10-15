@@ -206,3 +206,55 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 .button.disabled { opacity: 0.5; pointer-events: none; }
 .dog-gallery img:hover { transform: rotate(var(--rot, 0deg)) scale(1.03); }
 .dog-gallery img.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.06); transition: none; }
+
+/* ---- Design polish ---- */
+/* Retro backdrop: soft vertical gradient with a faint star-dot pattern */
+html { background: #0b0090; }
+body {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.10) 0 1.5px, transparent 2.5px) 0 0 / 46px 46px,
+    radial-gradient(circle, rgba(255, 204, 51, 0.10) 0 1px, transparent 2px) 23px 23px / 46px 46px,
+    linear-gradient(180deg, var(--bg), #0b0090);
+  min-height: 100vh;
+}
+main { padding-bottom: 56px; }
+
+/* Panels get the same gold frame + hard shadow as the dog photos */
+.panel {
+  border: 3px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 6px 6px 0 #ff00aa;
+}
+
+/* Planner: columns line up, add-buttons sit at the bottom of each column */
+.planner-col { display: flex; flex-direction: column; }
+.planner-list { flex: 1; align-content: start; }
+.planner-col .button { align-self: flex-start; }
+
+/* List rows */
+.planner-list li {
+  position: relative;
+  padding: 9px 10px 9px 38px;
+  border-left: 4px solid #ff00aa;
+  background: rgba(255, 255, 255, 0.10);
+}
+.planner-list li.muted { padding-left: 10px; border-left-color: transparent; opacity: 0.85; }
+.planner-list li:not(.muted)::before { position: absolute; left: 10px; top: 9px; }
+#movie-list li:not(.muted)::before { content: "\1F3AC"; }
+#date-list li:not(.muted)::before { content: "\1F4C5"; }
+.planner-list small { opacity: 0.85; }
+
+/* Buttons feel pressable */
+.button { box-shadow: 3px 3px 0 #000; transition: transform 0.1s, box-shadow 0.1s; }
+.button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
+.button:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
+
+/* Keyboard focus is visible */
+a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Hero: a bit more air */
+.hero { padding: 36px 0 22px; }
+.tagline { font-size: 1.05rem; opacity: 0.95; }
