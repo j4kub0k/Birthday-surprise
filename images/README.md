@@ -4,3 +4,6 @@ Drop the dog photos here as `dog1.jpg`, `dog2.jpg`, `dog3.jpg` ... up to `dog12.
 The page finds them by itself, so adding a photo needs no code change (just commit and push the file).
 
 Tip: resize to ~1000px wide so the page loads fast on mobile.
+
+Tip: photos straight from a phone carry hidden camera, date and sometimes GPS data. Resizing or exporting them
+(for example with an image editor's "export for web") removes it, which matters because the page can be public.
