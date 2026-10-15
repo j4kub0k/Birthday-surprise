@@ -230,48 +230,68 @@ summary::after {
 details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 @keyframes nudge { 50% { transform: scale(1.07); } }
 
-/* ---- "DOGEMA" collage board: cream poster paper, big red type, photos in mixed frames ---- */
+/* ---- "DOGEMA": a HUD monitor showing film strips (black, acid lime, blue, mono labels) ---- */
 .dog-gallery {
   position: relative;
   aspect-ratio: 1 / 2.7;
   max-width: 480px;
   margin: 22px auto 0;
   overflow: hidden;
-  color: #111;
+  color: var(--text);
   background:
-    radial-gradient(circle, rgba(0, 0, 0, 0.05) 0 1px, transparent 1.5px) 0 0 / 7px 7px,
-    #e9e3d3;
-  border: 2px solid #000;
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(70% 25% at 100% 0%, rgba(31, 63, 255, 0.5), transparent 70%),
+    #060606;
+  border: 1px solid var(--line);
   box-shadow: 8px 8px 0 var(--blue);
 }
+/* big blocky title with the same hard blue shadow as the page title */
 .dog-gallery::before {
   content: "DOGEMA";
   position: absolute;
-  top: 1.4%;
+  top: 1.3%;
   left: 4%;
-  font: 900 clamp(2rem, 11.5vw, 4rem)/0.9 var(--display);
   z-index: 4;
-  letter-spacing: -0.03em;
-  color: #d9362b;
+  font: 900 clamp(2rem, 11.5vw, 4rem)/0.9 var(--display);
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 3px 3px 0 var(--blue);
 }
+/* recording indicator */
 .dog-gallery::after {
-  content: "NOW\A SHOWING";
+  content: "\25CF REC\A SCN_07";
   position: absolute;
   z-index: 4;
   top: 2.2%;
-  right: 3%;
+  right: 4%;
   white-space: pre;
   text-align: right;
-  font: 700 0.6rem/1.35 var(--mono);
-  letter-spacing: 0.12em;
+  font: 700 0.62rem/1.5 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--lime);
+  animation: rec 1.6s steps(1, end) infinite;
+}
+@keyframes rec { 50% { opacity: 0.35; } }
+.hud-foot {
+  position: absolute;
+  z-index: 4;
+  left: 4%; right: 4%; bottom: 1%;
+  display: flex;
+  justify-content: space-between;
+  font: 700 0.55rem/1 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--lime);
+  pointer-events: none;
 }
 
-/* film strips: one black strip per row, with sprocket holes and orange edge print */
+/* film strips: one dark strip per row, acid-lime sprocket holes and edge print */
 .strip {
   position: absolute;
   left: -3%; right: -3%;
-  background: #0b0b0b;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  background: #101010;
+  border-top: 1px solid rgba(198, 255, 0, 0.55);
+  border-bottom: 1px solid rgba(198, 255, 0, 0.55);
   z-index: 2;
 }
 .strip::before, .strip::after {
@@ -279,8 +299,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   position: absolute;
   left: 0; right: 0;
   height: 8px;
-  background: repeating-linear-gradient(90deg, #e9e3d3 0 7px, transparent 7px 15px);
-  -webkit-mask: linear-gradient(#000, #000);
+  background: repeating-linear-gradient(90deg, rgba(198, 255, 0, 0.9) 0 7px, transparent 7px 15px);
 }
 .strip::before { top: 3px; }
 .strip::after { bottom: 3px; }
@@ -291,10 +310,11 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   white-space: nowrap;
   font: 700 7px/1 var(--mono);
   letter-spacing: 0.1em;
-  color: #f0a63a;
+  color: var(--lime);
+  opacity: 0.85;
 }
 
-/* the photos are frames on the film; dragging one out turns it into a loose print */
+/* the photos are frames on the film, with HUD corner brackets; dragging one out turns it into a loose print */
 .shot {
   position: absolute;
   margin: 0;
@@ -307,7 +327,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 }
 .shot:hover { transform: rotate(var(--rot, 0deg)) scale(1.02); }
 .shot.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.05); transition: none; }
-.shot.loose { box-shadow: 0 0 0 5px #fff, 3px 5px 14px 5px rgba(0, 0, 0, 0.4); }
+.shot.loose { box-shadow: 0 0 0 4px #fff, 8px 8px 0 4px var(--blue); }
 .shot img {
   position: absolute;
   inset: 0;
@@ -315,12 +335,25 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  background: #333;
-  outline: 2px solid #1a1a1a;
-  outline-offset: -2px;
+  background: #1a1a1a;
+  outline: 1px solid rgba(255, 255, 255, 0.35);
+  outline-offset: -1px;
 }
+.shot::before, .shot::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  width: 14px; height: 14px;
+  border: 0 solid var(--lime);
+  pointer-events: none;
+}
+.shot::before { top: 4px; left: 4px; border-width: 2px 0 0 2px; }
+.shot::after { bottom: 4px; right: 4px; border-width: 0 2px 2px 0; }
+.shot.loose::before, .shot.loose::after { display: none; }
 .look-bw img { filter: grayscale(1) contrast(1.15); }
-.look-sepia img { filter: sepia(0.7) contrast(1.05); }
+.look-blue img { filter: grayscale(1) contrast(1.2) brightness(1.05); }
+.look-blue { background: var(--blue); }
+.look-blue img { mix-blend-mode: multiply; }
 .look-color img { filter: saturate(1.08) contrast(1.03); }
 .frame-no {
   position: absolute;
@@ -328,26 +361,27 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   margin-top: 5px;
   font: 700 7px/1 var(--mono);
   letter-spacing: 0.08em;
-  color: #f0a63a;
+  color: var(--lime);
   white-space: nowrap;
   pointer-events: none;
 }
 .shot.loose .frame-no { display: none; }
 
-/* film reels peeking in from the corners (under the film) */
+/* wireframe film reels (lime outlines) over the strips, under the photos */
 .reel { position: absolute; z-index: 3; pointer-events: none; animation: spin 40s linear infinite; }
-.reel-a { width: 36%; right: -10%; bottom: -4%; }
+.reel-a { width: 30%; right: -9%; bottom: 5%; }
 .reel-b { width: 30%; left: -10%; top: 47%; animation-direction: reverse; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* red rubber stamp on one photo */
+/* stamp on one photo */
 .stamp {
   position: absolute;
   right: -6px; top: 8px;
+  z-index: 2;
   padding: 3px 7px;
-  border: 2px solid #d9362b;
-  background: rgba(233, 227, 211, 0.88);
-  color: #d9362b;
+  border: 2px solid var(--lime);
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--lime);
   font: 800 0.62rem/1 var(--mono);
   letter-spacing: 0.1em;
   transform: rotate(-9deg);
@@ -362,9 +396,10 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   display: grid;
   gap: 3px;
   text-align: center;
-  background: #f0a63a;
-  border: 2px dashed #111;
-  color: #111;
+  background: var(--lime);
+  border: 2px dashed #000;
+  box-shadow: 4px 4px 0 var(--blue);
+  color: #000;
   transform: rotate(var(--rot, 0deg));
   pointer-events: none;
 }
@@ -418,7 +453,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .glitter { animation: none; opacity: 0.7; }
-  .star, summary::after, .glitch-px, .reel { animation: none; }
+  .star, summary::after, .glitch-px, .reel, .dog-gallery::after { animation: none; }
   .glitch-px { opacity: 0.8; }
 }
 

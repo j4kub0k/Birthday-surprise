@@ -108,13 +108,13 @@
       Object.keys(attrs).forEach((k) => e.setAttribute(k, attrs[k]));
       svg.appendChild(e);
     };
-    add('circle', { cx: 50, cy: 50, r: 48, fill: '#161616', stroke: '#b9b2a0', 'stroke-width': 3 });
+    add('circle', { cx: 50, cy: 50, r: 48, fill: '#0b0b0b', stroke: '#c6ff00', 'stroke-width': 2.5 });
     for (let k = 0; k < 6; k++) {
       const ang = (k * 60) * Math.PI / 180;
-      add('circle', { cx: (50 + 28 * Math.cos(ang)).toFixed(2), cy: (50 + 28 * Math.sin(ang)).toFixed(2), r: 11, fill: '#e9e3d3', stroke: '#b9b2a0', 'stroke-width': 2 });
+      add('circle', { cx: (50 + 28 * Math.cos(ang)).toFixed(2), cy: (50 + 28 * Math.sin(ang)).toFixed(2), r: 11, fill: '#060606', stroke: '#c6ff00', 'stroke-width': 2 });
     }
-    add('circle', { cx: 50, cy: 50, r: 9, fill: '#b9b2a0' });
-    add('circle', { cx: 50, cy: 50, r: 3.5, fill: '#161616' });
+    add('circle', { cx: 50, cy: 50, r: 9, fill: '#c6ff00' });
+    add('circle', { cx: 50, cy: 50, r: 3.5, fill: '#0b0b0b' });
     return svg;
   }
 
@@ -141,8 +141,8 @@
       gallery.appendChild(strip);
     }
 
-    // some frames look like old black-and-white film, one like sepia
-    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'sepia']);
+    // some frames look like old black-and-white film, one is a blue monitor tint
+    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'blue']);
     const stampOn = Math.floor(Math.random() * COUNT);
     let topZ = COUNT + 10;
 
@@ -196,6 +196,10 @@
     ticket.style.setProperty('--rot', rand(-9, 9).toFixed(1) + 'deg');
     ticket.style.zIndex = COUNT + 5;
     gallery.appendChild(ticket);
+
+    const foot = el('div', 'hud-foot');
+    foot.append(el('span', '', 'TC 00:07:12'), el('span', '', COUNT + ' FRAMES LOADED'));
+    gallery.appendChild(foot);
   }
 
   layout();
