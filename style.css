@@ -260,7 +260,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 }
 /* recording indicator */
 .dog-gallery::after {
-  content: "\25CF REC\A SCN_07";
+  content: "\25CF REC\A " var(--scn, "SCN_07");
   position: absolute;
   z-index: 4;
   top: 2.2%;
@@ -468,3 +468,5 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 .button[hidden] { display: none; }
 .button.secondary { background: transparent; color: var(--lime); border-color: var(--lime); box-shadow: 4px 4px 0 var(--blue); }
 .button.secondary:hover { background: rgba(198, 255, 0, 0.12); }
+
+.hud-empty { margin: 0; padding: 70px 16px; text-align: center; font: 700 0.7rem/1.4 var(--mono); letter-spacing: 0.14em; color: var(--lime); }

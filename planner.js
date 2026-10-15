@@ -67,17 +67,14 @@
   h1.appendChild(svg);
 })();
 
-// Dog Appreciation Corner ("TARA", a DOGEMA film): 7 photos (images/dog1.jpg ... dog7.jpg) as frames on movie film strips.
-// Each row of the board is a strip of film; the photos can be dragged out of it and placed anywhere.
-// The layout is redone at random every time the corner is opened.
+// Dog Appreciation Corner ("TARA", a DOGEMA film): the photos images/dog1.jpg, dog2.jpg, ... (up to dog12.jpg, found
+// automatically) as frames on movie film strips. Each row of the board is a strip of film; the photos can be dragged
+// out of it and placed anywhere. The layout is redone at random every time the corner is opened.
 (function dogGallery() {
   const gallery = document.getElementById('dog-gallery');
   const details = gallery.closest('details');
-  const COUNT = 7, COLS = 2, ROWS = 4;
+  const MAX = 12, COLS = 2;
   const WIDTH = 36;                   // photo width, % of the board width (a photo is 4:5)
-  const ASPECT = 2.7;                 // board height / board width
-  const PHOTO_H = WIDTH * 1.25 / ASPECT; // photo height, % of the board height
-  const TOP = 11, SLOT = 22.2;        // first strip row starts at TOP %, each row is SLOT % tall
   const EDGE = 20;                    // px of film edge (sprocket holes + edge print) above and below a photo
   const FRAMES = ['2A', '3', '3A', '4', '4A', '5', '5A'];
   const WORDS = ['STARRING TARA', 'GOOD DOG', 'BEST FRIEND', 'PURE JOY', '10/10', 'NOW SHOWING', 'SOLD OUT'];
@@ -118,15 +115,34 @@
     return svg;
   }
 
-  // Lay everything out again at random; runs on page load and every time the corner is opened.
-  function layout() {
+  // Which photos exist? Try dog1.jpg ... dog12.jpg once and keep the ones that load.
+  const ready = Promise.all(Array.from({ length: MAX }, (_, i) => new Promise((resolve) => {
+    const probe = new Image();
+    probe.onload = () => resolve(i + 1);
+    probe.onerror = () => resolve(0);
+    probe.src = 'images/dog' + (i + 1) + '.jpg';
+  }))).then((found) => found.filter(Boolean));
+
+  // Lay everything out again at random; runs when the corner is opened.
+  function layout(available) {
     gallery.innerHTML = '';
-    const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
-    const soloRow = 1 + Math.floor(Math.random() * 2); // one photo centred in a middle row, so nothing looks missing
+    const COUNT = available.length;
+    if (!COUNT) { gallery.appendChild(el('p', 'hud-empty', 'NO FRAMES LOADED YET')); return; }
+    const ROWS = Math.ceil(COUNT / COLS);
+    // the board grows with the number of rows; sizes below are percentages of its height
+    const ASPECT = 0.675 * ROWS;                  // board height / board width
+    const PHOTO_H = WIDTH * 1.25 / ASPECT;        // photo height, % of the board height
+    const TOP = 29.7 / ASPECT, SLOT = 60 / ASPECT; // first strip row starts at TOP %, each row is SLOT % tall
+    gallery.style.aspectRatio = '1 / ' + ASPECT.toFixed(3);
+    gallery.style.setProperty('--scn', '"SCN_' + String(COUNT).padStart(2, '0') + '"');
+    const ids = shuffle(available.slice());
+    // with an odd number of photos one is centred in a middle row, so nothing looks missing
+    const odd = COUNT % 2 === 1;
+    const soloRow = odd ? Math.min(ROWS - 2, 1 + Math.floor(Math.random() * Math.max(1, ROWS - 2))) : -1;
     const slots = [];
     for (let row = 0; row < ROWS; row++) {
       if (row === soloRow) slots.push({ row, x: (100 - WIDTH) / 2 });
-      else for (let col = 0; col < COLS; col++) slots.push({ row, x: col * 50 + (50 - WIDTH) / 2 });
+      else for (let col = 0; col < COLS && slots.length < COUNT; col++) slots.push({ row, x: col * 50 + (50 - WIDTH) / 2 });
     }
 
     // reels peeking in from the corners, under the film
@@ -142,7 +158,8 @@
     }
 
     // some frames look like old black-and-white film, one is warm sepia
-    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'sepia']);
+    const base = ['color', 'color', 'color', 'color', 'bw', 'bw', 'sepia'];
+    const looks = shuffle(Array.from({ length: COUNT }, (_, i) => base[i % base.length]));
     const stampOn = Math.floor(Math.random() * COUNT);
     let topZ = COUNT + 10;
 
@@ -188,7 +205,8 @@
       gallery.appendChild(shot);
     });
 
-    // a ticket stub on the film beside the centred photo
+    // a ticket stub on the film beside the centred photo (only when there is one)
+    if (soloRow >= 0) {
     const ticket = el('div', 'ticket');
     ticket.append(el('b', '', 'ADMIT ONE'), el('span', '', 'N\u00B0 000' + (1 + Math.floor(Math.random() * 9))));
     ticket.style.top = (TOP + soloRow * SLOT + 3).toFixed(1) + '%';
@@ -196,14 +214,15 @@
     ticket.style.setProperty('--rot', rand(-9, 9).toFixed(1) + 'deg');
     ticket.style.zIndex = COUNT + 5;
     gallery.appendChild(ticket);
+    }
 
     const foot = el('div', 'hud-foot');
     foot.append(el('span', '', 'A DOGEMA FILM'), el('span', '', COUNT + ' FRAMES LOADED'));
     gallery.appendChild(foot);
   }
 
-  layout();
-  if (details) details.addEventListener('toggle', () => { if (details.open) layout(); });
+  ready.then(layout);
+  if (details) details.addEventListener('toggle', () => { if (details.open) ready.then(layout); });
 })();
 
 // Give every heading its own random sticker look: fill/ink/outline colours, hard shadow and a slight tilt.
