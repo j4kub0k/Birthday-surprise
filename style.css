@@ -258,3 +258,18 @@ a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
 /* Hero: a bit more air */
 .hero { padding: 36px 0 22px; }
 .tagline { font-size: 1.05rem; opacity: 0.95; }
+
+/* "NEW" badge on entries added since the last visit */
+.new-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ff00aa;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  box-shadow: 2px 2px 0 #000;
+}

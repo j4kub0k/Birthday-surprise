@@ -158,6 +158,23 @@
     else { a.classList.add('disabled'); a.removeAttribute('href'); }
   }
 
+  // "NEW" badges: remember which entries were on the list when the page was last left, per device.
+  const SEEN_PREFIX = 'planner-seen-';
+  const currentKeys = {}; // listId -> keys of the entries on screen now
+  function readSeen(listId) {
+    try {
+      const raw = localStorage.getItem(SEEN_PREFIX + listId);
+      return raw === null ? null : JSON.parse(raw); // null = first visit: nothing counts as new
+    } catch (e) { return null; }
+  }
+  function saveSeen() {
+    try {
+      Object.keys(currentKeys).forEach((id) => localStorage.setItem(SEEN_PREFIX + id, JSON.stringify(currentKeys[id])));
+    } catch (e) { /* storage blocked: badges simply never show */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveSeen(); });
+  window.addEventListener('pagehide', saveSeen);
+
   async function fillList(listId, csvUrl, emptyText) {
     const list = document.getElementById(listId);
     if (!csvUrl) { setMessage(list, 'Not connected yet.'); return; }
@@ -169,11 +186,25 @@
       const rows = parseCsv(text).slice(1).reverse(); // drop header, newest first
       if (!rows.length) { setMessage(list, emptyText); return; }
       list.innerHTML = '';
+      const seen = readSeen(listId);
+      let keptNew = [];
+      try { keptNew = JSON.parse(sessionStorage.getItem(SEEN_PREFIX + 'new-' + listId) || '[]'); } catch (e) { /* ignore */ }
+      const newKeys = [];
+      currentKeys[listId] = [];
       rows.forEach((r) => {
         const title = (r[1] || '').trim();
         if (!title) return;
+        const key = r.join('|');
+        currentKeys[listId].push(key);
         const li = document.createElement('li');
         li.textContent = title;
+        if ((seen && !seen.includes(key)) || keptNew.includes(key)) {
+          newKeys.push(key);
+          const badge = document.createElement('span');
+          badge.className = 'new-badge';
+          badge.textContent = 'NEW';
+          li.appendChild(badge);
+        }
         const details = r.slice(2).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
         if (details) {
           const small = document.createElement('small');
@@ -182,6 +213,7 @@
         }
         list.appendChild(li);
       });
+      try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
       if (!list.children.length) setMessage(list, emptyText);
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
