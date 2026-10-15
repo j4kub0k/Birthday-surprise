@@ -313,3 +313,9 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 .planner-list li.done { opacity: 0.7; }
 .planner-list li.done::before { content: "\2713"; }
 .planner-list li.done small { text-decoration: none; }
+
+/* Button row + secondary (outlined) button */
+.button-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.button[hidden] { display: none; }
+.button.secondary { background: transparent; color: var(--lime); border-color: var(--lime); box-shadow: 4px 4px 0 var(--blue); }
+.button.secondary:hover { background: rgba(198, 255, 0, 0.12); }
