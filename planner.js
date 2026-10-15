@@ -1,8 +1,9 @@
-// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg) scattered like prints on a table.
-// Tap a photo to bring it to the front.
+// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg). They start in a 2x4 grid without
+// overlapping (one cell stays empty), slightly tilted, and can be dragged anywhere in the box.
 (function buildDogGallery() {
   const gallery = document.getElementById('dog-gallery');
   const COUNT = 7, COLS = 2, ROWS = 4;
+  const WIDTH = 42; // photo width, % of the gallery width (gallery height is 2x its width)
   const shuffle = (arr) => {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -12,24 +13,43 @@
   };
   const rand = (min, max) => Math.random() * (max - min) + min;
   const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
-  // Pick COUNT of the COLS*ROWS grid cells, so photos spread out but jitter and overlap.
   const cells = shuffle(Array.from({ length: COLS * ROWS }, (_, i) => i)).slice(0, COUNT);
   let topZ = COUNT;
+
   ids.forEach((n, i) => {
     const col = cells[i] % COLS, row = Math.floor(cells[i] / COLS);
-    const width = rand(46, 56); // % of the gallery width
-    const left = Math.min(100 - width, Math.max(0, col * (100 - width) + rand(-5, 5)));
-    const top = Math.min(72, Math.max(0, row * 24 + rand(-4, 4))); // % of the gallery height
     const img = document.createElement('img');
     img.src = 'images/dog' + n + '.jpg';
     img.alt = 'Dog photo ' + n;
-    img.loading = 'lazy';
-    img.style.width = width.toFixed(1) + '%';
-    img.style.left = left.toFixed(1) + '%';
-    img.style.top = top.toFixed(1) + '%';
+    img.draggable = false;
+    img.style.width = WIDTH + '%';
+    img.style.left = (col * 50 + (50 - WIDTH) / 2 + rand(-1.5, 1.5)).toFixed(1) + '%';
+    img.style.top = (row * 25 + (25 - WIDTH / 2) / 2 + rand(-1, 1)).toFixed(1) + '%';
     img.style.zIndex = i + 1;
-    img.style.setProperty('--rot', rand(-14, 14).toFixed(1) + 'deg');
-    img.addEventListener('click', () => { img.style.zIndex = ++topZ; });
+    img.style.setProperty('--rot', rand(-6, 6).toFixed(1) + 'deg');
+
+    let dx = 0, dy = 0;
+    img.addEventListener('pointerdown', (e) => {
+      const g = gallery.getBoundingClientRect(), r = img.getBoundingClientRect();
+      dx = e.clientX - r.left;
+      dy = e.clientY - r.top;
+      img.setPointerCapture(e.pointerId);
+      img.classList.add('dragging');
+      img.style.zIndex = ++topZ;
+    });
+    img.addEventListener('pointermove', (e) => {
+      if (!img.classList.contains('dragging')) return;
+      const g = gallery.getBoundingClientRect();
+      // the on-screen box is slightly bigger than the layout box because of the tilt; use the layout size
+      const w = img.offsetWidth, h = img.offsetHeight;
+      const x = Math.min(Math.max(e.clientX - g.left - dx - (img.getBoundingClientRect().width - w) / 2, 0), g.width - w);
+      const y = Math.min(Math.max(e.clientY - g.top - dy - (img.getBoundingClientRect().height - h) / 2, 0), g.height - h);
+      img.style.left = (x / g.width * 100).toFixed(2) + '%';
+      img.style.top = (y / g.height * 100).toFixed(2) + '%';
+    });
+    const drop = () => img.classList.remove('dragging');
+    img.addEventListener('pointerup', drop);
+    img.addEventListener('pointercancel', drop);
     gallery.appendChild(img);
   });
 })();
