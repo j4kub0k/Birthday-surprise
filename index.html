@@ -8,12 +8,17 @@
 </head>
 <body>
   <header class="hero">
-    <h1 class="wordart" data-sparkle>Movie Night</h1>
+    <p class="kicker">// MOVIE.NIGHT_v1</p>
+    <div class="hero-title">
+      <span class="star" aria-hidden="true">&#10022;</span>
+      <h1 class="wordart" data-sparkle>Movie Night</h1>
+      <span class="star" aria-hidden="true">&#10022;</span>
+    </div>
     <p class="tagline">Pick a movie. Pick a day. Press play.</p>
   </header>
 
   <main>
-    <section id="movies" class="panel">
+    <section id="movies" class="panel" data-label="01 // PLANNER">
       <div class="planner">
         <div class="planner-col">
           <h2>Movies to watch</h2>
@@ -28,7 +33,7 @@
       </div>
     </section>
 
-    <section id="dogs" class="panel">
+    <section id="dogs" class="panel" data-label="02 // PHOTOS">
       <details>
         <summary><h2>In case you'll miss your love</h2></summary>
         <!-- Photos dog1.jpg ... dog7.jpg are placed here in random order by planner.js -->
@@ -36,6 +41,8 @@
       </details>
     </section>
   </main>
+
+  <footer class="hazard" aria-hidden="true"><span>&gt; SEE YOU AT THE MOVIES_</span></footer>
 
   <script src="config.js"></script>
   <script src="planner.js"></script>

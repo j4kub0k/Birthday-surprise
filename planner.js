@@ -71,14 +71,15 @@
 
 // Give every WordArt header its own random look.
 (function randomiseWordArt() {
+  // [top, upper, horizon (dark band), lower] stops for a chrome-style gradient
   const palettes = [
-    ['#ff2d2d', '#ffcc33', '#33ff66', '#33ccff'],
-    ['#ff00aa', '#ff7a00', '#ffee00', '#ffffff'],
-    ['#00f5d4', '#00bbf9', '#9b5de5', '#f15bb5'],
-    ['#ffffff', '#ffe066', '#ff9f1c', '#e71d36'],
-    ['#b8ff3d', '#2ee6a6', '#2aa9ff', '#7b4dff'],
+    ['#ffffff', '#b8c4ff', '#2a2f8f', '#e6ccff'], // silver chrome
+    ['#ffffff', '#ffb3f0', '#7a2cc4', '#9ff3ff'], // holographic pink
+    ['#ffffff', '#a6f0ff', '#1a5fb0', '#e0e8ff'], // ice
+    ['#faffd6', '#d4ff3d', '#2d5a00', '#f0ffb0'], // acid lime
+    ['#ffffff', '#ffd1b0', '#b03a8a', '#ffe9a8'], // peach
   ];
-  const shadows = ['#ff00aa', '#00e5ff', '#ff6a00', '#7cff00', '#b100ff'];
+  const shadows = ['#ff4de1', '#4de1ff', '#b58cff', '#c6ff00', '#ffffff'];
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const rand = (min, max) => (Math.random() * (max - min) + min).toFixed(1);
   document.querySelectorAll('.hero h1, .panel h2, .wordart').forEach((el) => {
