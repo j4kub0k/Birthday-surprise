@@ -1,7 +1,9 @@
-// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg). They start in a 2x4 grid without
-// overlapping (one cell stays empty), slightly tilted, and can be dragged anywhere in the box.
-(function buildDogGallery() {
+// Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg). Each time the corner is opened they are
+// placed again at random in a 2x4 grid without overlapping (one cell stays empty), slightly tilted, and can be
+// dragged anywhere in the box.
+(function dogGallery() {
   const gallery = document.getElementById('dog-gallery');
+  const details = gallery.closest('details');
   const COUNT = 7, COLS = 2, ROWS = 4;
   const WIDTH = 42; // photo width, % of the gallery width (gallery height is 2x its width)
   const shuffle = (arr) => {
@@ -12,46 +14,53 @@
     return arr;
   };
   const rand = (min, max) => Math.random() * (max - min) + min;
-  const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
-  const cells = shuffle(Array.from({ length: COLS * ROWS }, (_, i) => i)).slice(0, COUNT);
-  let topZ = COUNT;
+  // Lay the photos out again at random; runs on page load and every time the corner is opened.
+  function layout() {
+    gallery.innerHTML = '';
+    const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
+    const cells = shuffle(Array.from({ length: COLS * ROWS }, (_, i) => i)).slice(0, COUNT);
+    let topZ = COUNT;
 
-  ids.forEach((n, i) => {
-    const col = cells[i] % COLS, row = Math.floor(cells[i] / COLS);
-    const img = document.createElement('img');
-    img.src = 'images/dog' + n + '.jpg';
-    img.alt = 'Dog photo ' + n;
-    img.draggable = false;
-    img.style.width = WIDTH + '%';
-    img.style.left = (col * 50 + (50 - WIDTH) / 2 + rand(-1.5, 1.5)).toFixed(1) + '%';
-    img.style.top = (row * 25 + (25 - WIDTH / 2) / 2 + rand(-1, 1)).toFixed(1) + '%';
-    img.style.zIndex = i + 1;
-    img.style.setProperty('--rot', rand(-6, 6).toFixed(1) + 'deg');
+    ids.forEach((n, i) => {
+      const col = cells[i] % COLS, row = Math.floor(cells[i] / COLS);
+      const img = document.createElement('img');
+      img.src = 'images/dog' + n + '.jpg';
+      img.alt = 'Dog photo ' + n;
+      img.draggable = false;
+      img.style.width = WIDTH + '%';
+      img.style.left = (col * 50 + (50 - WIDTH) / 2 + rand(-1.5, 1.5)).toFixed(1) + '%';
+      img.style.top = (row * 25 + (25 - WIDTH / 2) / 2 + rand(-1, 1)).toFixed(1) + '%';
+      img.style.zIndex = i + 1;
+      img.style.setProperty('--rot', rand(-6, 6).toFixed(1) + 'deg');
 
-    let dx = 0, dy = 0;
-    img.addEventListener('pointerdown', (e) => {
-      const g = gallery.getBoundingClientRect(), r = img.getBoundingClientRect();
-      dx = e.clientX - r.left;
-      dy = e.clientY - r.top;
-      img.setPointerCapture(e.pointerId);
-      img.classList.add('dragging');
-      img.style.zIndex = ++topZ;
+      let dx = 0, dy = 0;
+      img.addEventListener('pointerdown', (e) => {
+        const g = gallery.getBoundingClientRect(), r = img.getBoundingClientRect();
+        dx = e.clientX - r.left;
+        dy = e.clientY - r.top;
+        img.setPointerCapture(e.pointerId);
+        img.classList.add('dragging');
+        img.style.zIndex = ++topZ;
+      });
+      img.addEventListener('pointermove', (e) => {
+        if (!img.classList.contains('dragging')) return;
+        const g = gallery.getBoundingClientRect();
+        // the on-screen box is slightly bigger than the layout box because of the tilt; use the layout size
+        const w = img.offsetWidth, h = img.offsetHeight;
+        const x = Math.min(Math.max(e.clientX - g.left - dx - (img.getBoundingClientRect().width - w) / 2, 0), g.width - w);
+        const y = Math.min(Math.max(e.clientY - g.top - dy - (img.getBoundingClientRect().height - h) / 2, 0), g.height - h);
+        img.style.left = (x / g.width * 100).toFixed(2) + '%';
+        img.style.top = (y / g.height * 100).toFixed(2) + '%';
+      });
+      const drop = () => img.classList.remove('dragging');
+      img.addEventListener('pointerup', drop);
+      img.addEventListener('pointercancel', drop);
+      gallery.appendChild(img);
     });
-    img.addEventListener('pointermove', (e) => {
-      if (!img.classList.contains('dragging')) return;
-      const g = gallery.getBoundingClientRect();
-      // the on-screen box is slightly bigger than the layout box because of the tilt; use the layout size
-      const w = img.offsetWidth, h = img.offsetHeight;
-      const x = Math.min(Math.max(e.clientX - g.left - dx - (img.getBoundingClientRect().width - w) / 2, 0), g.width - w);
-      const y = Math.min(Math.max(e.clientY - g.top - dy - (img.getBoundingClientRect().height - h) / 2, 0), g.height - h);
-      img.style.left = (x / g.width * 100).toFixed(2) + '%';
-      img.style.top = (y / g.height * 100).toFixed(2) + '%';
-    });
-    const drop = () => img.classList.remove('dragging');
-    img.addEventListener('pointerup', drop);
-    img.addEventListener('pointercancel', drop);
-    gallery.appendChild(img);
-  });
+  }
+
+  layout();
+  if (details) details.addEventListener('toggle', () => { if (details.open) layout(); });
 })();
 
 // Give every WordArt header its own random look.
