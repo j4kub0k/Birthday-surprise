@@ -1,5 +1,5 @@
 // Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg). Each time the corner is opened they are
-// placed again at random in a 2x4 grid without overlapping (one cell stays empty), slightly tilted, and can be
+// placed again at random in a 2-column grid without overlapping (one photo is centred in a middle row), slightly tilted, and can be
 // dragged anywhere in the box.
 (function dogGallery() {
   const gallery = document.getElementById('dog-gallery');
@@ -18,18 +18,24 @@
   function layout() {
     gallery.innerHTML = '';
     const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
-    const cells = shuffle(Array.from({ length: COLS * ROWS }, (_, i) => i)).slice(0, COUNT);
+    // 4 rows: pairs in three of them and one photo centred in a middle row (row 1 or 2), so nothing looks missing.
+    const soloRow = 1 + Math.floor(Math.random() * 2);
+    const slots = [];
+    for (let row = 0; row < ROWS; row++) {
+      if (row === soloRow) slots.push({ row, x: (100 - WIDTH) / 2 });
+      else for (let col = 0; col < COLS; col++) slots.push({ row, x: col * 50 + (50 - WIDTH) / 2 });
+    }
     let topZ = COUNT;
 
     ids.forEach((n, i) => {
-      const col = cells[i] % COLS, row = Math.floor(cells[i] / COLS);
+      const slot = slots[i];
       const img = document.createElement('img');
       img.src = 'images/dog' + n + '.jpg';
       img.alt = 'Dog photo ' + n;
       img.draggable = false;
       img.style.width = WIDTH + '%';
-      img.style.left = (col * 50 + (50 - WIDTH) / 2 + rand(-1.5, 1.5)).toFixed(1) + '%';
-      img.style.top = (row * 25 + (25 - WIDTH / 2) / 2 + rand(-1, 1)).toFixed(1) + '%';
+      img.style.left = (slot.x + rand(-1.5, 1.5)).toFixed(1) + '%';
+      img.style.top = (slot.row * 25 + (25 - WIDTH / 2) / 2 + rand(-1, 1)).toFixed(1) + '%';
       img.style.zIndex = i + 1;
       img.style.setProperty('--rot', rand(-6, 6).toFixed(1) + 'deg');
 
