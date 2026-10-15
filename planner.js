@@ -1,3 +1,72 @@
+// Big blocky pixel title: draws the h1 text from a 5x7 pixel font as SVG (no font download needed).
+(function pixelTitle() {
+  const h1 = document.querySelector('h1.pixel-title');
+  if (!h1) return;
+  const FONT = {
+    M: ['X...X', 'XX.XX', 'X.X.X', 'X.X.X', 'X...X', 'X...X', 'X...X'],
+    O: ['.XXX.', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.XXX.'],
+    V: ['X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.X.X.', '..X..'],
+    I: ['XXXXX', '..X..', '..X..', '..X..', '..X..', '..X..', 'XXXXX'],
+    E: ['XXXXX', 'X....', 'X....', 'XXXX.', 'X....', 'X....', 'XXXXX'],
+    N: ['X...X', 'XX..X', 'X.X.X', 'X..XX', 'X...X', 'X...X', 'X...X'],
+    G: ['.XXX.', 'X...X', 'X....', 'X.XXX', 'X...X', 'X...X', '.XXX.'],
+    H: ['X...X', 'X...X', 'X...X', 'XXXXX', 'X...X', 'X...X', 'X...X'],
+    T: ['XXXXX', '..X..', '..X..', '..X..', '..X..', '..X..', '..X..'],
+  };
+  const words = h1.textContent.trim().toUpperCase().split(/\s+/);
+  if (!words.every((w) => [...w].every((c) => FONT[c]))) return; // unknown letter: keep plain text
+  const NS = 'http://www.w3.org/2000/svg';
+  const width = Math.max(...words.map((w) => w.length * 6 - 1));
+  const height = words.length * 8 - 1;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + (width + 1) + ' ' + (height + 1));
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  const shadow = document.createElementNS(NS, 'g');
+  const front = document.createElementNS(NS, 'g');
+  shadow.setAttribute('fill', '#1f3fff');
+  shadow.setAttribute('transform', 'translate(0.45 0.45)');
+  front.setAttribute('fill', '#ffffff');
+  const rect = (parent, x, y) => {
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', 1.02); r.setAttribute('height', 1.02);
+    parent.appendChild(r);
+  };
+  const filled = [];
+  words.forEach((word, row) => {
+    [...word].forEach((ch, i) => {
+      FONT[ch].forEach((line, y) => {
+        [...line].forEach((cell, x) => {
+          if (cell !== 'X') return;
+          rect(shadow, i * 6 + x, row * 8 + y);
+          rect(front, i * 6 + x, row * 8 + y);
+          filled.push([i * 6 + x, row * 8 + y]);
+        });
+      });
+    });
+  });
+  svg.appendChild(shadow);
+  svg.appendChild(front);
+  // a few lime "glitch" pixels that blink on top of the letters themselves
+  const glitch = document.createElementNS(NS, 'g');
+  glitch.setAttribute('fill', '#c6ff00');
+  for (let i = 0; i < 7; i++) {
+    const r = document.createElementNS(NS, 'rect');
+    const cell = filled[Math.floor(Math.random() * filled.length)];
+    r.setAttribute('x', cell[0]);
+    r.setAttribute('y', cell[1]);
+    r.setAttribute('width', 1.02); r.setAttribute('height', 1.02);
+    r.setAttribute('class', 'glitch-px');
+    r.style.animationDelay = (-Math.random() * 3).toFixed(2) + 's';
+    r.style.animationDuration = (1.2 + Math.random() * 1.6).toFixed(2) + 's';
+    glitch.appendChild(r);
+  }
+  svg.appendChild(glitch);
+  h1.setAttribute('aria-label', h1.textContent.trim());
+  h1.textContent = '';
+  h1.appendChild(svg);
+})();
+
 // Dog Appreciation Corner: 7 photos (images/dog1.jpg ... dog7.jpg). Each time the corner is opened they are
 // placed again at random in a 2-column grid without overlapping (one photo is centred in a middle row), slightly tilted, and can be
 // dragged anywhere in the box.
@@ -78,7 +147,7 @@
     { bg: '#000000', fg: '#c6ff00', bd: '#c6ff00', sh: '#1f3fff' }, // black, lime ink
   ];
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  document.querySelectorAll('.hero h1, .panel h2, .wordart').forEach((el) => {
+  document.querySelectorAll('.panel h2, .wordart').forEach((el) => {
     const v = pick(variants);
     el.style.setProperty('--wa-bg', v.bg);
     el.style.setProperty('--wa-fg', v.fg);
