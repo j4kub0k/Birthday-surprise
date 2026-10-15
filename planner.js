@@ -239,46 +239,108 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveSeen(); });
   window.addEventListener('pagehide', saveSeen);
 
-  async function fillList(listId, csvUrl, emptyText) {
+  // ---- dates: strict parsing only (never Date.parse, which turns "Fri 14 Nov" into the year 2001) ----
+  function validDate(y, m, d) {
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? dt : null;
+  }
+  const SLASH = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/;
+  // Slash dates are ambiguous (3/4 = 3 April or March 4). Look at all dates: a part above 12 settles it.
+  function detectOrder(strings) {
+    let dmy = false, mdy = false;
+    strings.forEach((s) => {
+      const m = SLASH.exec(s.trim());
+      if (!m) return;
+      if (+m[1] > 12) dmy = true;
+      if (+m[2] > 12) mdy = true;
+    });
+    if (dmy && !mdy) return 'dmy';
+    if (mdy && !dmy) return 'mdy';
+    return cfg.dateOrder === 'mdy' ? 'mdy' : 'dmy';
+  }
+  function parseDate(str, order) {
+    const s = str.trim();
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s) || /^(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(s);
+    if (m) return validDate(+m[1], +m[2], +m[3]);
+    m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})/.exec(s); // 14.11.2026 is always day first
+    if (m) return validDate(+m[3], +m[2], +m[1]);
+    m = SLASH.exec(s);
+    if (m) return order === 'mdy' ? validDate(+m[3], +m[1], +m[2]) : validDate(+m[3], +m[2], +m[1]);
+    return null; // free text such as "Fri 14 Nov evening": kept in the list, never hidden
+  }
+  const isTrue = (v) => /^(true|yes|y|x|1|\u2713|\u2714|watched)$/i.test((v || '').trim());
+
+  async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
+    const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
+    const watchedBlock = kind === 'movies' ? document.getElementById('watched-block') : null;
     if (!csvUrl) { setMessage(list, 'Not connected yet.'); return; }
     try {
       const res = await fetch(csvUrl);
       if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return; }
       const text = await res.text();
       if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return; }
-      const rows = parseCsv(text).slice(1).reverse(); // drop header, newest first
-      if (!rows.length) { setMessage(list, emptyText); return; }
-      list.innerHTML = '';
+      const parsed = parseCsv(text);
+      const header = parsed[0] || [];
+      const rows = parsed.slice(1).reverse(); // newest first
+      // movies: a column whose header contains "watched" (tick it in the sheet) moves a movie to the watched list
+      const wi = kind === 'movies' ? header.findIndex((h) => /watched/i.test(h)) : -1;
+      if (watchedBlock) watchedBlock.hidden = wi < 0;
+      if (!rows.length) {
+        setMessage(list, emptyText);
+        if (watchedList && wi >= 0) setMessage(watchedList, 'Nothing watched yet.');
+        return;
+      }
+
       const seen = readSeen(listId);
       let keptNew = [];
       try { keptNew = JSON.parse(sessionStorage.getItem(SEEN_PREFIX + 'new-' + listId) || '[]'); } catch (e) { /* ignore */ }
       const newKeys = [];
       currentKeys[listId] = [];
+
+      const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const entries = [];
       rows.forEach((r) => {
         const title = (r[1] || '').trim();
         if (!title) return;
         const key = r.join('|');
         currentKeys[listId].push(key);
+        const entry = { r, key, title, date: kind === 'dates' ? parseDate(title, order) : null, watched: wi >= 0 && isTrue(r[wi]) };
+        if (entry.date && entry.date < today) return; // outdated dates disappear
+        entries.push(entry);
+      });
+      if (kind === 'dates') {
+        // real dates first (soonest first), free-text ones after, both keeping newest-first order otherwise
+        const dated = entries.filter((e) => e.date).sort((a, b) => a.date - b.date);
+        entries.splice(0, entries.length, ...dated, ...entries.filter((e) => !e.date));
+      }
+
+      list.innerHTML = '';
+      if (watchedList) watchedList.innerHTML = '';
+      entries.forEach((e) => {
         const li = document.createElement('li');
-        li.textContent = title;
-        if ((seen && !seen.includes(key)) || keptNew.includes(key)) {
-          newKeys.push(key);
+        li.textContent = e.date
+          ? e.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+          : e.title;
+        if (!e.watched && ((seen && !seen.includes(e.key)) || keptNew.includes(e.key))) {
+          newKeys.push(e.key);
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = 'NEW';
           li.appendChild(badge);
         }
-        const details = r.slice(2).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
+        const details = e.r.slice(2).filter((x, i) => i + 2 !== wi).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
         if (details) {
           const small = document.createElement('small');
           small.textContent = details;
           li.appendChild(small);
         }
-        list.appendChild(li);
+        if (e.watched) { li.className = 'done'; watchedList.appendChild(li); } else list.appendChild(li);
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
-      if (!list.children.length) setMessage(list, emptyText);
+      if (!list.children.length) setMessage(list, kind === 'dates' ? 'No upcoming dates. Add one!' : emptyText);
+      if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
       setMessage(list, 'Could not reach Google (network or blocked). Try reloading.');
@@ -287,6 +349,6 @@
 
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
-  fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!');
-  fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!');
+  fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');
+  fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates');
 })();
