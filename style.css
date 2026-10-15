@@ -305,3 +305,11 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   .star, summary::after, .glitch-px { animation: none; }
   .glitch-px { opacity: 0.8; }
 }
+
+/* Watched movies */
+.watched-block { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.watched-block[hidden] { display: none; }
+.watched-block h3 { margin: 0; font: 700 0.72rem/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--lime); }
+.planner-list li.done { opacity: 0.7; }
+.planner-list li.done::before { content: "\2713"; }
+.planner-list li.done small { text-decoration: none; }
