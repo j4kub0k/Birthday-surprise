@@ -69,34 +69,28 @@
   if (details) details.addEventListener('toggle', () => { if (details.open) layout(); });
 })();
 
-// Give every WordArt header its own random look.
+// Give every heading its own random sticker look: fill/ink/outline colours, hard shadow and a slight tilt.
 (function randomiseWordArt() {
-  // [top, upper, horizon (dark band), lower] stops for a chrome-style gradient
-  const palettes = [
-    ['#ffffff', '#b8c4ff', '#2a2f8f', '#e6ccff'], // silver chrome
-    ['#ffffff', '#ffb3f0', '#7a2cc4', '#9ff3ff'], // holographic pink
-    ['#ffffff', '#a6f0ff', '#1a5fb0', '#e0e8ff'], // ice
-    ['#faffd6', '#d4ff3d', '#2d5a00', '#f0ffb0'], // acid lime
-    ['#ffffff', '#ffd1b0', '#b03a8a', '#ffe9a8'], // peach
+  const variants = [
+    { bg: '#ffffff', fg: '#1f3fff', bd: '#1f3fff', sh: '#c6ff00' }, // white pill, blue ink (BLISS)
+    { bg: '#c6ff00', fg: '#000000', bd: '#000000', sh: '#1f3fff' }, // acid lime, black ink
+    { bg: '#1f3fff', fg: '#ffffff', bd: '#ffffff', sh: '#c6ff00' }, // electric blue, white ink
+    { bg: '#000000', fg: '#c6ff00', bd: '#c6ff00', sh: '#1f3fff' }, // black, lime ink
   ];
-  const shadows = ['#ff4de1', '#4de1ff', '#b58cff', '#c6ff00', '#ffffff'];
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const rand = (min, max) => (Math.random() * (max - min) + min).toFixed(1);
   document.querySelectorAll('.hero h1, .panel h2, .wordart').forEach((el) => {
-    const p = pick(palettes);
-    el.style.setProperty('--wa-c1', p[0]);
-    el.style.setProperty('--wa-c2', p[1]);
-    el.style.setProperty('--wa-c3', p[2]);
-    el.style.setProperty('--wa-c4', p[3]);
-    el.style.setProperty('--wa-shadow', pick(shadows));
-    el.style.setProperty('--wa-rot', rand(-4, 2) + 'deg');
-    el.style.setProperty('--wa-skew', rand(-9, -2) + 'deg');
+    const v = pick(variants);
+    el.style.setProperty('--wa-bg', v.bg);
+    el.style.setProperty('--wa-fg', v.fg);
+    el.style.setProperty('--wa-bd', v.bd);
+    el.style.setProperty('--wa-sh', v.sh);
+    el.style.setProperty('--wa-rot', (Math.random() * 5 - 3).toFixed(1) + 'deg');
   });
 })();
 
 // Flickering glitter over headers marked with data-sparkle.
 (function addGlitter() {
-  const colours = ['#ffffff', '#fff2a8', '#ffd700', '#ff9ee6', '#8ff3ff', '#c9a7ff'];
+  const colours = ['#ffffff', '#c6ff00', '#c6ff00', '#6f86ff', '#8ff3ff'];
   document.querySelectorAll('[data-sparkle]').forEach((heading) => {
     const wrap = document.createElement('span');
     wrap.className = 'glitter-wrap';

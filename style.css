@@ -1,23 +1,20 @@
-/* Movie Night: electric-blue Y2K meets cyber-brutalist HUD.
-   Chrome type, glass cards, acid-lime accents, mono labels, rounded white photo frames. */
+/* Movie Night: cyber-brutalist HUD (black, acid lime, mono labels, hazard stripes)
+   mixed with the BLISS poster (electric blue, white rounded pills and frames, stars, thin rules). */
 
 :root {
-  --bg: #1a03ec;
-  --bg-deep: #07005f;
+  --black: #070707;
+  --blue: #1f3fff;
   --lime: #c6ff00;
-  --pink: #ff4de1;
-  --ice: #4de1ff;
   --text: #ffffff;
-  --line: rgba(255, 255, 255, 0.35);
-  --glass: rgba(255, 255, 255, 0.10);
+  --line: rgba(255, 255, 255, 0.28);
   --gutter: 16px;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
-  --display: Impact, "Arial Black", "Helvetica Neue", sans-serif;
+  --display: "Arial Black", Impact, "Helvetica Neue", sans-serif;
 }
 
 * { box-sizing: border-box; }
 
-html { background: var(--bg-deep); }
+html { background: var(--black); }
 
 body {
   margin: 0;
@@ -28,25 +25,40 @@ body {
   padding: env(safe-area-inset-top) var(--gutter) 0;
   display: flex;
   flex-direction: column;
-  /* HUD grid + soft holographic blobs over an electric-blue gradient */
+  /* faint HUD grid + a blue glow top-right */
   background:
-    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 44px 44px,
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 44px 44px,
-    radial-gradient(60% 40% at 90% 8%, rgba(255, 77, 225, 0.45), transparent 70%),
-    radial-gradient(55% 40% at 8% 45%, rgba(77, 225, 255, 0.35), transparent 70%),
-    radial-gradient(60% 40% at 95% 85%, rgba(160, 120, 255, 0.40), transparent 70%),
-    linear-gradient(180deg, var(--bg), var(--bg-deep));
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 40px 40px,
+    radial-gradient(50% 30% at 100% 0%, rgba(31, 63, 255, 0.45), transparent 70%),
+    var(--black);
 }
 
 a { color: var(--lime); }
 
-/* ---------- header ---------- */
-.hero { text-align: center; padding: 28px 0 22px; }
+/* ---------- header: thin blue rules, mono blurb left, outlined title pill right ---------- */
+.hero { padding: 26px 0 28px; }
 .kicker {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   font: 700 0.72rem/1 var(--mono);
   letter-spacing: 0.18em;
   color: var(--lime);
+}
+.hero-rule { height: 3px; background: var(--blue); }
+.hero-row {
+  display: grid;
+  gap: 18px;
+  align-items: center;
+  padding: 20px 0;
+}
+@media (min-width: 640px) {
+  .hero-row { grid-template-columns: auto 1fr; gap: 28px; }
+  .hero-title { justify-content: flex-end; }
+}
+.tagline {
+  margin: 0;
+  font: 400 0.8rem/1.7 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .hero-title {
   display: flex;
@@ -55,86 +67,72 @@ a { color: var(--lime); }
   gap: 10px;
 }
 .star {
+  flex: none;
   font-size: clamp(1.6rem, 8vw, 2.6rem);
   line-height: 1;
-  color: #fff;
-  text-shadow: 0 0 10px #fff, 0 0 22px var(--ice);
+  color: var(--lime);
   animation: pulse 2.4s ease-in-out infinite;
 }
-.tagline {
-  margin: 12px 0 0;
-  font: 400 0.8rem/1.4 var(--mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.9;
-}
 
-/* ---------- chrome WordArt headings (colours + tilt randomised per heading by planner.js) ---------- */
+/* ---------- sticker headings: pill, ink and shadow colours randomised per heading by planner.js ---------- */
 .wordart,
 .hero h1,
 .panel h2 {
   display: inline-block;
   max-width: 100%;
   margin: 0;
-  padding: 0.08em 0.25em 0.2em 0.08em;
+  padding: 0.12em 0.7em 0.16em;
   font-family: var(--display);
-  font-size: clamp(1.5rem, 7vw, 2.05rem);
+  font-size: clamp(1.05rem, 5vw, 1.35rem);
   font-weight: 900;
   font-style: italic;
-  line-height: 1.12;
-  letter-spacing: 0.5px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   overflow-wrap: anywhere;
-  transform: rotate(var(--wa-rot, -2deg)) skewX(var(--wa-skew, -6deg));
-  transform-origin: left center;
-  background: linear-gradient(180deg,
-    var(--wa-c1, #fff) 0%, var(--wa-c2, #b8c4ff) 46%,
-    var(--wa-c3, #2a2f8f) 50%, var(--wa-c4, #e6ccff) 54%, var(--wa-c1, #fff) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 1px #0a0a5a;
-  filter: drop-shadow(2px 2px 0 #0a0a5a) drop-shadow(0 0 10px var(--wa-shadow, #ff4de1));
+  background: var(--wa-bg, #fff);
+  color: var(--wa-fg, var(--blue));
+  border: 3px solid var(--wa-bd, var(--blue));
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--wa-sh, var(--lime));
+  transform: rotate(var(--wa-rot, -1.5deg));
 }
-.hero h1 { font-size: clamp(2.1rem, 11vw, 3.4rem); transform-origin: center; }
-.hero-title .glitter-wrap { flex: 0 1 auto; }
+.hero h1 {
+  font-size: clamp(1.7rem, 9vw, 2.9rem);
+  padding: 0.1em 0.55em 0.14em;
+  border-width: 4px;
+  box-shadow: 5px 5px 0 var(--wa-sh, var(--lime));
+}
 
-/* ---------- glass "window" panels ---------- */
-main { width: 100%; max-width: 680px; margin: 0 auto; display: grid; gap: 22px; padding-bottom: 48px; align-content: start; flex: 1; }
+/* ---------- HUD boxes: square, thin border, blue title bar with a mono label ---------- */
+main { width: 100%; max-width: 680px; margin: 0 auto; display: grid; gap: 24px; padding-bottom: 48px; align-content: start; flex: 1; }
 
 .panel {
   position: relative;
-  padding: 44px var(--gutter) var(--gutter);
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  padding: 50px var(--gutter) var(--gutter);
+  background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 40, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-radius: 0;
 }
 .panel[hidden] { display: none; }
-/* title bar: three dots on the left, mono label on the right */
 .panel::before {
   content: attr(data-label);
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 32px;
-  padding: 0 14px 0 64px;
+  top: -1px; left: -1px; right: -1px;
+  height: 34px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  font: 700 0.68rem/1 var(--mono);
-  letter-spacing: 0.16em;
-  color: var(--lime);
-  border-bottom: 1px solid var(--line);
+  background: var(--blue);
+  font: 700 0.72rem/1 var(--mono);
+  letter-spacing: 0.18em;
 }
 .panel::after {
-  content: "";
+  content: "+";
   position: absolute;
-  top: 12px; left: 14px;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 14px 0 0 rgba(255, 255, 255, 0.6), 28px 0 0 rgba(255, 255, 255, 0.3);
+  top: 5px; right: 12px;
+  font: 700 1.1rem/1 var(--mono);
+  color: var(--lime);
 }
 
 /* ---------- buttons ---------- */
@@ -151,13 +149,13 @@ main { width: 100%; max-width: 680px; margin: 0 auto; display: grid; gap: 22px; 
   text-transform: uppercase;
   text-decoration: none;
   border: 2px solid #000;
-  border-radius: 4px;
-  box-shadow: 4px 4px 0 #000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--blue);
   transition: transform 0.1s, box-shadow 0.1s;
 }
 .button::after { content: "\2197"; font-size: 1.1em; }
-.button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #000; }
-.button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+.button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--blue); }
+.button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--blue); }
 .button.disabled { opacity: 0.5; pointer-events: none; }
 a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
   outline: 3px solid #fff;
@@ -165,9 +163,9 @@ a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
 }
 
 /* ---------- planner ---------- */
-.planner { display: grid; gap: 26px; }
+.planner { display: grid; gap: 28px; }
 @media (min-width: 600px) { .planner { grid-template-columns: 1fr 1fr; gap: 22px; } }
-.planner-col { display: flex; flex-direction: column; gap: 14px; }
+.planner-col { display: flex; flex-direction: column; gap: 16px; }
 .planner-col .button { align-self: flex-start; }
 
 .planner-list {
@@ -186,11 +184,12 @@ a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
   position: relative;
   counter-increment: n;
   padding: 9px 14px 9px 46px;
-  background: rgba(255, 255, 255, 0.08);
+  background: #111;
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow-wrap: anywhere;
 }
+.planner-list li:hover { border-color: var(--lime); }
 .planner-list li::before {
   content: counter(n, decimal-leading-zero);
   position: absolute;
@@ -199,7 +198,7 @@ a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
   font: 700 0.75rem/1.4 var(--mono);
   color: var(--lime);
 }
-.planner-list small { display: block; font: 400 0.72rem/1.4 var(--mono); opacity: 0.85; }
+.planner-list small { display: block; font: 400 0.72rem/1.4 var(--mono); opacity: 0.8; }
 .planner-list li.muted {
   counter-increment: none;
   padding-left: 14px;
@@ -220,7 +219,6 @@ a:focus-visible, summary:focus-visible, .dog-gallery img:focus-visible {
   color: #000;
   font: 800 0.65rem/1 var(--mono);
   letter-spacing: 0.1em;
-  border-radius: 3px;
 }
 
 /* ---------- dog corner ---------- */
@@ -231,11 +229,11 @@ summary {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   min-height: 44px;
 }
 summary::-webkit-details-marker { display: none; }
-summary h2 { flex: 1 1 14em; }
+summary h2 { flex: 0 1 auto; }
 summary::after {
   content: "TAP TO OPEN \2197";
   flex: none;
@@ -245,8 +243,7 @@ summary::after {
   font: 800 0.72rem/1 var(--mono);
   letter-spacing: 0.1em;
   border: 2px solid #000;
-  border-radius: 4px;
-  box-shadow: 3px 3px 0 #000;
+  box-shadow: 3px 3px 0 var(--blue);
   animation: nudge 1.6s ease-in-out infinite;
 }
 details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
@@ -256,7 +253,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   position: relative;
   aspect-ratio: 1 / 2;
   max-width: 480px;
-  margin: var(--gutter) auto 0;
+  margin: 22px auto 0;
 }
 .dog-gallery img {
   position: absolute;
@@ -266,11 +263,11 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   cursor: grab;
   touch-action: none; /* a finger drags the photo instead of scrolling the page */
   user-select: none;
-  background: #3a2fd0;
-  /* rounded white frame like the BLISS poster */
+  background: #14199a;
+  /* rounded white frame (BLISS) with a hard blue shadow (HUD) */
   border: 5px solid #fff;
   border-radius: 16px;
-  box-shadow: 0 8px 22px rgba(0, 0, 60, 0.55);
+  box-shadow: 6px 6px 0 var(--blue);
   transform: rotate(var(--rot, 0deg));
   transition: transform 0.2s;
 }
@@ -320,7 +317,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   75% { opacity: 0.8; }
   90% { opacity: 0; }
 }
-@keyframes pulse { 50% { opacity: 0.55; transform: scale(0.85) rotate(20deg); } }
+@keyframes pulse { 50% { opacity: 0.5; transform: scale(0.85) rotate(20deg); } }
 
 @media (prefers-reduced-motion: reduce) {
   .glitter { animation: none; opacity: 0.7; }
