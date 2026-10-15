@@ -1,3 +1,21 @@
+// Dog Appreciation Corner: 10 photos (images/dog1.jpg ... dog10.jpg), shuffled with a slight random tilt.
+(function buildDogGallery() {
+  const gallery = document.getElementById('dog-gallery');
+  const ids = Array.from({ length: 10 }, (_, i) => i + 1);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  ids.forEach((n) => {
+    const img = document.createElement('img');
+    img.src = 'images/dog' + n + '.jpg';
+    img.alt = 'Dog photo ' + n;
+    img.loading = 'lazy';
+    img.style.transform = 'rotate(' + (Math.random() * 8 - 4).toFixed(1) + 'deg)';
+    gallery.appendChild(img);
+  });
+})();
+
 // Give every WordArt header its own random look.
 (function randomiseWordArt() {
   const palettes = [
