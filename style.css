@@ -120,11 +120,19 @@ details[open] > summary::after { content: "CLOSE \25B2"; animation: none; }
 .dog-gallery {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--gutter);
+  gap: 22px;
   padding: var(--gutter) 4px 4px;
 }
 @media (min-width: 560px) { .dog-gallery { grid-template-columns: repeat(3, 1fr); } }
-.dog-gallery img { aspect-ratio: 1 / 1; }
+.dog-gallery img {
+  aspect-ratio: 1 / 1;
+  /* retro frame to match the WordArt headers: gold border, white mat, hard pink + black shadow */
+  border: 3px solid var(--accent);
+  outline: 4px solid #fff;
+  outline-offset: -7px;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #ff00aa, 7px 7px 0 #000;
+}
 
 /* Retro WordArt: applied to every header (and usable via <span class="wordart">) */
 .wordart,
