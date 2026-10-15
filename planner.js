@@ -347,6 +347,9 @@
     }
   }
 
+  // Link to the Google Sheet itself (the normal /edit link) so a movie can be ticked as watched; hidden until set in config.js
+  const sheetLink = document.getElementById('open-sheet');
+  if (cfg.sheetUrl) { sheetLink.href = cfg.sheetUrl; sheetLink.hidden = false; }
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
   fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');

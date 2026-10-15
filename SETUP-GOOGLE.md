@@ -24,7 +24,8 @@ For each of the two response tabs in the sheet:
 2. In the first empty column to the right of the answers, type the header **Watched**.
 3. Select the cells below it (for example D2:D1000) and choose **Insert -> Checkbox**.
 4. Tick a movie's box when you have watched it. The site moves it to "Already watched".
-5. If there is no column with "watched" in its header, the watched list stays hidden.
+5. Paste the sheet's normal link (the address bar while it is open, `https://docs.google.com/spreadsheets/d/.../edit`) into `sheetUrl` in `config.js`. The site then shows a "Tick watched in the sheet" button that opens it. The person must be allowed to edit the sheet (Share -> add her email, or "anyone with the link can edit", which means anyone with the link can change it).
+6. If there is no column with "watched" in its header, the watched list stays hidden.
 
 ## Dates
 - Dates that have passed disappear from the site on their own (today's date stays until the day is over). The rows stay in the sheet.
