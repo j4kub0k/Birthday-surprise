@@ -67,18 +67,21 @@
   h1.appendChild(svg);
 })();
 
-// Dog Appreciation Corner ("DOGEMA"): 7 photos (images/dog1.jpg ... dog7.jpg) as a collage board.
-// Each photo gets one of four looks (film frame, aged paper, off-white print, black-and-white poster),
-// they are laid out again at random every time the corner is opened, and can be dragged anywhere.
+// Dog Appreciation Corner ("DOGEMA"): 7 photos (images/dog1.jpg ... dog7.jpg) as frames on movie film strips.
+// Each row of the board is a strip of film; the photos can be dragged out of it and placed anywhere.
+// The layout is redone at random every time the corner is opened.
 (function dogGallery() {
   const gallery = document.getElementById('dog-gallery');
   const details = gallery.closest('details');
   const COUNT = 7, COLS = 2, ROWS = 4;
-  const WIDTH = 40;                 // photo width, % of the board width (a photo is 4:5)
-  const TOP = 12, SLOT = 21.25;     // board space below the big title: first row starts at TOP %, each row is SLOT % tall
-  const STYLES = ['film', 'paper', 'print', 'bw'];
+  const WIDTH = 36;                   // photo width, % of the board width (a photo is 4:5)
+  const ASPECT = 2.7;                 // board height / board width
+  const PHOTO_H = WIDTH * 1.25 / ASPECT; // photo height, % of the board height
+  const TOP = 11, SLOT = 22.2;        // first strip row starts at TOP %, each row is SLOT % tall
+  const EDGE = 20;                    // px of film edge (sprocket holes + edge print) above and below a photo
+  const FRAMES = ['2A', '3', '3A', '4', '4A', '5', '5A'];
   const WORDS = ['GOOD DOG', 'BEST FRIEND', 'PURE JOY', '10/10', 'TREAT ME', 'NOW SHOWING', 'SOLD OUT'];
-  const FRAMES = ['2A', '3', '3A', '4', '4A', '5'];
+  const NS = 'http://www.w3.org/2000/svg';
   const shuffle = (arr) => {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -94,49 +97,70 @@
     if (text !== undefined) e.textContent = text;
     return e;
   };
+  // A film reel drawn in SVG: rim, six windows and a hub.
+  function reel(cls) {
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('class', 'reel ' + cls);
+    svg.setAttribute('aria-hidden', 'true');
+    const add = (tag, attrs) => {
+      const e = document.createElementNS(NS, tag);
+      Object.keys(attrs).forEach((k) => e.setAttribute(k, attrs[k]));
+      svg.appendChild(e);
+    };
+    add('circle', { cx: 50, cy: 50, r: 48, fill: '#161616', stroke: '#b9b2a0', 'stroke-width': 3 });
+    for (let k = 0; k < 6; k++) {
+      const ang = (k * 60) * Math.PI / 180;
+      add('circle', { cx: (50 + 28 * Math.cos(ang)).toFixed(2), cy: (50 + 28 * Math.sin(ang)).toFixed(2), r: 11, fill: '#e9e3d3', stroke: '#b9b2a0', 'stroke-width': 2 });
+    }
+    add('circle', { cx: 50, cy: 50, r: 9, fill: '#b9b2a0' });
+    add('circle', { cx: 50, cy: 50, r: 3.5, fill: '#161616' });
+    return svg;
+  }
 
-  // Lay the photos out again at random; runs on page load and every time the corner is opened.
+  // Lay everything out again at random; runs on page load and every time the corner is opened.
   function layout() {
     gallery.innerHTML = '';
     const ids = shuffle(Array.from({ length: COUNT }, (_, i) => i + 1));
-    // every look appears at least once
-    const looks = shuffle([...STYLES, ...shuffle([...STYLES]).slice(0, COUNT - STYLES.length)]);
-    // 4 rows: pairs in three of them and one photo centred in a middle row (row 1 or 2), so nothing looks missing.
-    const soloRow = 1 + Math.floor(Math.random() * 2);
+    const soloRow = 1 + Math.floor(Math.random() * 2); // one photo centred in a middle row, so nothing looks missing
     const slots = [];
     for (let row = 0; row < ROWS; row++) {
       if (row === soloRow) slots.push({ row, x: (100 - WIDTH) / 2 });
       else for (let col = 0; col < COLS; col++) slots.push({ row, x: col * 50 + (50 - WIDTH) / 2 });
     }
+
+    // reels peeking in from the corners, under the film
+    gallery.append(reel('reel-a'), reel('reel-b'));
+
+    // the film strips: one per row
+    for (let row = 0; row < ROWS; row++) {
+      const strip = el('div', 'strip');
+      strip.style.top = 'calc(' + (TOP + row * SLOT).toFixed(2) + '% - ' + EDGE + 'px)';
+      strip.style.height = 'calc(' + PHOTO_H.toFixed(2) + '% + ' + (EDGE * 2) + 'px)';
+      strip.appendChild(el('span', 'strip-text', ('DOGGO 400 \u25B7 ' + (row * 2 + 1) + ' \u25B7 ' + (row * 2 + 1) + 'A \u25B7 ').repeat(6)));
+      gallery.appendChild(strip);
+    }
+
+    // some frames look like old black-and-white film, one like sepia
+    const looks = shuffle(['color', 'color', 'color', 'color', 'bw', 'bw', 'sepia']);
     const stampOn = Math.floor(Math.random() * COUNT);
-    let topZ = COUNT + 1;
+    let topZ = COUNT + 10;
 
     ids.forEach((n, i) => {
       const slot = slots[i];
-      const look = looks[i];
-      const shot = el('figure', 'shot s-' + look);
+      const shot = el('figure', 'shot look-' + looks[i]);
       shot.style.width = WIDTH + '%';
-      shot.style.left = (slot.x + rand(-1.5, 1.5)).toFixed(1) + '%';
-      shot.style.top = (TOP + slot.row * SLOT + 0.6 + rand(-0.6, 0.6)).toFixed(1) + '%';
-      shot.style.zIndex = i + 1;
-      shot.style.setProperty('--rot', rand(-4.5, 4.5).toFixed(1) + 'deg');
+      shot.style.left = (slot.x + rand(-1, 1)).toFixed(1) + '%';
+      shot.style.top = (TOP + slot.row * SLOT + rand(-0.3, 0.3)).toFixed(2) + '%';
+      shot.style.zIndex = i + 10;
+      shot.style.setProperty('--rot', rand(-1.8, 1.8).toFixed(1) + 'deg');
 
       const img = el('img');
       img.src = 'images/dog' + n + '.jpg';
       img.alt = 'Dog photo ' + n;
       img.draggable = false;
       shot.appendChild(img);
-
-      const num = String(n).padStart(2, '0');
-      if (look === 'film') {
-        const top = el('span', 'cap-t'); top.append(el('b', '', String(n)), el('i', '', '\u25B7 ' + pick(FRAMES)));
-        const bot = el('span', 'cap-b'); bot.append(el('b', '', 'DOGGO 400'), el('i', '', String(n) + ' / ' + pick(FRAMES)));
-        shot.append(top, bot);
-      } else if (look === 'paper') {
-        shot.appendChild(el('span', 'cap-p', 'Fig. ' + n));
-      } else if (look === 'print') {
-        shot.appendChild(el('span', 'cap-m', 'N\u00B0' + num + ' \u00B7 ' + pick(WORDS)));
-      }
+      shot.appendChild(el('span', 'frame-no', '\u25B7 ' + n + ' / ' + pick(FRAMES)));
       if (i === stampOn) shot.appendChild(el('span', 'stamp', pick(WORDS)));
 
       let dx = 0, dy = 0;
@@ -145,7 +169,7 @@
         dx = e.clientX - r.left;
         dy = e.clientY - r.top;
         shot.setPointerCapture(e.pointerId);
-        shot.classList.add('dragging');
+        shot.classList.add('dragging', 'loose'); // pulled out of the reel: becomes a loose print
         shot.style.zIndex = ++topZ;
       });
       shot.addEventListener('pointermove', (e) => {
@@ -164,12 +188,13 @@
       gallery.appendChild(shot);
     });
 
-    // a ticket stub in the empty space beside the centred photo
+    // a ticket stub on the film beside the centred photo
     const ticket = el('div', 'ticket');
     ticket.append(el('b', '', 'ADMIT ONE'), el('span', '', 'N\u00B0 000' + (1 + Math.floor(Math.random() * 9))));
-    ticket.style.top = (TOP + soloRow * SLOT + 2).toFixed(1) + '%';
+    ticket.style.top = (TOP + soloRow * SLOT + 3).toFixed(1) + '%';
     ticket.style.left = (Math.random() < 0.5 ? 3 : 71) + '%';
     ticket.style.setProperty('--rot', rand(-9, 9).toFixed(1) + 'deg');
+    ticket.style.zIndex = COUNT + 5;
     gallery.appendChild(ticket);
   }
 

@@ -233,7 +233,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 /* ---- "DOGEMA" collage board: cream poster paper, big red type, photos in mixed frames ---- */
 .dog-gallery {
   position: relative;
-  aspect-ratio: 1 / 2.5;
+  aspect-ratio: 1 / 2.7;
   max-width: 480px;
   margin: 22px auto 0;
   overflow: hidden;
@@ -249,21 +249,52 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   position: absolute;
   top: 1.4%;
   left: 4%;
-  font: 900 clamp(2.3rem, 14vw, 4.4rem)/0.9 var(--display);
+  font: 900 clamp(2rem, 11.5vw, 4rem)/0.9 var(--display);
+  z-index: 4;
   letter-spacing: -0.03em;
   color: #d9362b;
 }
 .dog-gallery::after {
-  content: "LIVE\A TOUR\A 2026";
+  content: "NOW\A SHOWING";
   position: absolute;
-  top: 2.4%;
+  z-index: 4;
+  top: 2.2%;
   right: 3%;
   white-space: pre;
   text-align: right;
-  font: 700 0.62rem/1.35 var(--mono);
+  font: 700 0.6rem/1.35 var(--mono);
   letter-spacing: 0.12em;
 }
 
+/* film strips: one black strip per row, with sprocket holes and orange edge print */
+.strip {
+  position: absolute;
+  left: -3%; right: -3%;
+  background: #0b0b0b;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+}
+.strip::before, .strip::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, #e9e3d3 0 7px, transparent 7px 15px);
+  -webkit-mask: linear-gradient(#000, #000);
+}
+.strip::before { top: 3px; }
+.strip::after { bottom: 3px; }
+.strip-text {
+  position: absolute;
+  top: 12px; left: 5%; right: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font: 700 7px/1 var(--mono);
+  letter-spacing: 0.1em;
+  color: #f0a63a;
+}
+
+/* the photos are frames on the film; dragging one out turns it into a loose print */
 .shot {
   position: absolute;
   margin: 0;
@@ -272,101 +303,47 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
   touch-action: none; /* a finger drags the photo instead of scrolling the page */
   user-select: none;
   transform: rotate(var(--rot, 0deg));
-  transition: transform 0.2s;
-  box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.35);
-  --pad-x: 6px; --pad-top: 6px; --pad-bot: 6px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.shot:hover { transform: rotate(var(--rot, 0deg)) scale(1.03); }
-.shot.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.06); transition: none; }
+.shot:hover { transform: rotate(var(--rot, 0deg)) scale(1.02); }
+.shot.dragging { cursor: grabbing; transform: rotate(var(--rot, 0deg)) scale(1.05); transition: none; }
+.shot.loose { box-shadow: 0 0 0 5px #fff, 3px 5px 14px 5px rgba(0, 0, 0, 0.4); }
 .shot img {
   position: absolute;
-  left: var(--pad-x);
-  top: var(--pad-top);
-  width: calc(100% - 2 * var(--pad-x));
-  height: calc(100% - var(--pad-top) - var(--pad-bot));
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   pointer-events: none;
-  background: #bbb;
+  background: #333;
+  outline: 2px solid #1a1a1a;
+  outline-offset: -2px;
 }
-.shot span, .shot b, .shot i { font-style: normal; pointer-events: none; }
-
-/* 1. film frame (contact sheet): black strip, sprocket holes, orange edge print */
-.s-film { background: #0b0b0b; --pad-x: 7px; --pad-top: 24px; --pad-bot: 24px; }
-.s-film::before, .s-film::after {
-  content: "";
+.look-bw img { filter: grayscale(1) contrast(1.15); }
+.look-sepia img { filter: sepia(0.7) contrast(1.05); }
+.look-color img { filter: saturate(1.08) contrast(1.03); }
+.frame-no {
   position: absolute;
-  left: 5px; right: 5px;
-  height: 7px;
-  background: repeating-linear-gradient(90deg, #efe7d6 0 6px, transparent 6px 12px);
-  border-radius: 1px;
-}
-.s-film::before { top: 5px; }
-.s-film::after { bottom: 5px; }
-.s-film img { filter: saturate(1.1) contrast(1.05); }
-.cap-t, .cap-b {
-  position: absolute;
-  left: 8px; right: 8px;
-  display: flex;
-  justify-content: space-between;
-  font: 700 8px/1 var(--mono);
+  left: 2px; top: 100%;
+  margin-top: 5px;
+  font: 700 7px/1 var(--mono);
   letter-spacing: 0.08em;
   color: #f0a63a;
-}
-.cap-t { top: 13px; }
-.cap-b { bottom: 13px; }
-
-/* 2. aged paper cut-out: torn edge, sepia print, tape */
-.s-paper {
-  --pad-x: 9px; --pad-top: 14px; --pad-bot: 30px;
-  background: none;
-  box-shadow: none;
-  filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.4));
-}
-.s-paper::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: #e2d0a8;
-  clip-path: polygon(0 2%, 5% 0, 11% 2%, 18% 0, 26% 1.5%, 34% 0, 42% 2%, 51% 0, 60% 1.5%, 68% 0, 77% 2%, 85% 0, 93% 1.5%, 100% 0,
-    100% 97%, 94% 100%, 86% 98%, 77% 100%, 68% 98.5%, 58% 100%, 49% 98%, 40% 100%, 31% 98.5%, 22% 100%, 13% 98%, 6% 100%, 0 98%);
-}
-.s-paper::after {
-  content: "";
-  position: absolute;
-  top: -7px; left: 34%;
-  width: 32%; height: 16px;
-  background: rgba(255, 252, 225, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  transform: rotate(-4deg);
-}
-.s-paper img { filter: sepia(0.55) contrast(1.05); }
-.cap-p {
-  position: absolute;
-  left: 11px; bottom: 8px;
-  font: italic 600 0.8rem/1 Georgia, "Times New Roman", serif;
-  color: #3a2a12;
-}
-
-/* 3. off-white print with a mono caption (poster inset) */
-.s-print { background: #f4f1ea; border: 1px solid #111; --pad-x: 8px; --pad-top: 8px; --pad-bot: 32px; }
-.cap-m {
-  position: absolute;
-  left: 8px; right: 8px; bottom: 10px;
-  font: 700 0.5rem/1 var(--mono);
-  letter-spacing: 0.06em;
   white-space: nowrap;
-  color: #111;
+  pointer-events: none;
 }
+.shot.loose .frame-no { display: none; }
 
-/* 4. black-and-white poster print with a thin offset outline */
-.s-bw { background: #fff; border: 1px solid #111; --pad-x: 6px; --pad-top: 6px; --pad-bot: 6px; }
-.s-bw::before { content: ""; position: absolute; inset: -6px 6px 6px -6px; border: 1px solid #111; z-index: -1; }
-.s-bw img { filter: grayscale(1) contrast(1.15); }
+/* film reels peeking in from the corners (under the film) */
+.reel { position: absolute; z-index: 3; pointer-events: none; animation: spin 40s linear infinite; }
+.reel-a { width: 36%; right: -10%; bottom: -4%; }
+.reel-b { width: 30%; left: -10%; top: 47%; animation-direction: reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* red rubber stamp on one photo */
 .stamp {
   position: absolute;
-  right: -8px; top: 10px;
+  right: -6px; top: 8px;
   padding: 3px 7px;
   border: 2px solid #d9362b;
   background: rgba(233, 227, 211, 0.88);
@@ -441,7 +418,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .glitter { animation: none; opacity: 0.7; }
-  .star, summary::after, .glitch-px { animation: none; }
+  .star, summary::after, .glitch-px, .reel { animation: none; }
   .glitch-px { opacity: 0.8; }
 }
 
