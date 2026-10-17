@@ -790,3 +790,23 @@ body::after {
 .tickets > li, .showtimes > li { flex-shrink: 0; }
 .tickets { max-height: 460px; }
 .showtimes { max-height: none; overflow: visible; }
+
+/* long lists: no scroll box, a "Show all" button instead */
+.tickets { max-height: none; overflow: visible; }
+.more-toggle { margin-top: -4px; }
+
+/* "usually free" days on the board (from weekday rows in the Free days tab) */
+.board-day.usual { border-style: dashed; border-color: rgba(198, 255, 0, 0.45); }
+.board-day.usual i span { opacity: 0.55; }
+.board-day.usual-both { background: repeating-linear-gradient(-45deg, rgba(198, 255, 0, 0.28) 0 4px, transparent 4px 8px), #121212; border: 1px dashed var(--lime); }
+.legend-usual::before { content: ""; width: 12px; height: 12px; border: 1px dashed var(--lime); background: repeating-linear-gradient(-45deg, rgba(198, 255, 0, 0.35) 0 3px, transparent 3px 6px); }
+
+/* "Lock it in" */
+.lock-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; width: 100%; }
+.chip.lock { background: var(--lime); color: #000; box-shadow: 3px 3px 0 var(--blue); }
+.chip.lock:hover { background: #fff; }
+.locked { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.locked-line { width: 100%; font: 700 0.7rem/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); }
+.locked-line b { color: #fff; font-family: var(--display); font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; }
+.locked .cal-row { margin-top: 0; }
+.next-show .lock-wrap { width: auto; margin-top: 0; }

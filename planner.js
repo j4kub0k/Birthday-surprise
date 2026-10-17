@@ -382,10 +382,10 @@
     out.push(rest);
     return out.join('\r\n');
   }
-  function eventInfo(date, note) {
-    const title = cfg.eventTitle || 'Movie night \uD83C\uDFAC';
+  function eventInfo(date, note, customTitle) {
+    const title = customTitle || cfg.eventTitle || 'Movie night \uD83C\uDFAC';
     const pageUrl = /^https?:/.test(location.href) ? location.origin + location.pathname : '';
-    const lines = ['Pick a movie from the list and press play.'];
+    const lines = [customTitle ? 'It is locked in. Popcorn ready.' : 'Pick a movie from the list and press play.'];
     if (note) lines.push(note);
     if (pageUrl) lines.push(pageUrl);
     return { title, description: lines.join('\n'), pageUrl };
@@ -411,8 +411,8 @@
       'END:VEVENT', 'END:VCALENDAR',
     ].map(foldLine).join('\r\n') + '\r\n';
   }
-  function calendarButtons(date, note) {
-    const info = eventInfo(date, note);
+  function calendarButtons(date, note, customTitle) {
+    const info = eventInfo(date, note, customTitle);
     const row = document.createElement('span');
     row.className = 'cal-row';
     const ics = document.createElement('button');
@@ -537,6 +537,7 @@
       const land = () => {
         items.forEach((li) => li.classList.remove('flash'));
         const li = items[winner];
+        if (li.hidden) expandList(list);
         li.classList.add('picked');
         const tag = document.createElement('span');
         tag.className = 'pick-tag';
@@ -573,10 +574,140 @@
   const starsText = (n) => { const r = Math.round(n); return '★'.repeat(r) + '☆'.repeat(5 - r); };
   const csfdUrl = (title) => 'https://www.csfd.cz/hledat/?q=' + encodeURIComponent(title);
   const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  let movieTitles = []; // movies still to watch, used by "Lock it in"
+
+  // ---- "Free days" tab: Date | Jakub | Her (checkboxes). Optional "Jakub (evening)" columns, a "Note" column,
+  //      and rows with a weekday instead of a date ("Friday") for days you're usually free ----
+  const WEEKDAYS = [
+    ['sunday', 'sun', 'nedele', 'ne'], ['monday', 'mon', 'pondeli', 'po'], ['tuesday', 'tue', 'tues', 'utery', 'ut'],
+    ['wednesday', 'wed', 'streda', 'st'], ['thursday', 'thu', 'thur', 'thurs', 'ctvrtek', 'ct'],
+    ['friday', 'fri', 'patek', 'pa'], ['saturday', 'sat', 'sobota', 'so'],
+  ];
+  function weekdayOf(text) {
+    const t = text.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/^(every|each|usually|kazd[yae]|vzdy)\s+/, '').replace(/s$/, '');
+    return WEEKDAYS.findIndex((names) => names.includes(t) || names.includes(t + 's'));
+  }
+  // "Jakub", "Jakub (evening)" or "Jakub - evening" -> { name, slot }
+  function splitHeader(h) {
+    const m = /^(.*?)\s*(?:\(([^)]*)\)|[-–:]\s*(.+))\s*$/.exec(h.trim());
+    if (m && m[1]) return { name: m[1].trim(), slot: (m[2] || m[3] || '').trim().toLowerCase() };
+    return { name: h.trim(), slot: '' };
+  }
+  // who ticked, and whether everybody shares a time slot (= both free)
+  function summarize(ticks, people, slots, note) {
+    const names = people.filter((p) => ticks.some((c) => c.name === p));
+    const shared = people.length >= 2 ? slots.filter((s) => people.every((p) => ticks.some((c) => c.name === p && c.slot === s))) : [];
+    const both = shared.length > 0;
+    const slotText = shared.filter(Boolean).join(' / ');
+    const who = both
+      ? names.join(' + ') + (slotText ? ' · ' + slotText : '')
+      : names.map((n) => {
+        const s = ticks.filter((c) => c.name === n && c.slot).map((c) => c.slot);
+        return s.length ? n + ' (' + s.join(' / ') + ')' : n;
+      }).join(' · ');
+    return { names, both, shared, details: [who, note].filter(Boolean).join(' · ') };
+  }
+  function parseGrid(parsed, today) {
+    const header = parsed[0] || [];
+    const di = findCol(header, /date|datum|^\s*(den|day)\s*$|when|kdy/i, 0);
+    const ni = findCol(header, /note|pozn|comment|koment/i, -1);
+    const cols = [];
+    header.forEach((h, i) => {
+      if (i === di || i === ni || !h.trim() || /timestamp|casov|časov/i.test(h)) return;
+      cols.push(Object.assign({ i }, splitHeader(h)));
+    });
+    const people = [];
+    cols.forEach((c) => {
+      const p = people.find((x) => sameName(x, c.name));
+      if (p) c.name = p; else people.push(c.name);
+    });
+    const slots = Array.from(new Set(cols.map((c) => c.slot)));
+    const rows = parsed.slice(1);
+    const order = detectOrder(rows.map((r) => r[di] || ''));
+    const explicit = new Map();
+    const patterns = new Map();
+    rows.forEach((r) => {
+      const cell = (r[di] || '').trim();
+      if (!cell) return;
+      const ticks = cols.filter((c) => isTrue(r[c.i]));
+      const info = summarize(ticks, people, slots, ni >= 0 ? (r[ni] || '').trim() : '');
+      const w = weekdayOf(cell);
+      if (w >= 0) { patterns.set(w, info); return; }
+      const d = parseDate(cell, order);
+      if (!d || d < today) return;
+      const key = 'grid|' + ymd(d) + '|' + ticks.map((c) => c.i).join(',');
+      explicit.set(ymd(d), Object.assign(info, { date: d, r, title: cell, key, keys: [key] }));
+    });
+    const dated = Array.from(explicit.values()).filter((e) => e.names.length);
+    return { dated, people, hints: { explicit, patterns } };
+  }
+
+  // ---- "Show all": long lists show the first few rows and a button instead of a scroll box ----
+  function collapseList(ul, n) {
+    const old = document.getElementById(ul.id + '-more');
+    if (old) old.remove();
+    const items = Array.from(ul.children).filter((li) => !li.classList.contains('muted'));
+    items.forEach((li) => { li.hidden = false; });
+    if (items.length <= n + 1) return; // hiding a single row is not worth a button
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip more-toggle';
+    btn.id = ul.id + '-more';
+    const apply = () => {
+      const open = btn.dataset.open === '1';
+      items.forEach((li, i) => { li.hidden = !open && i >= n; });
+      btn.textContent = open ? 'Show less' : 'Show all (' + items.length + ')';
+    };
+    btn.addEventListener('click', () => { btn.dataset.open = btn.dataset.open === '1' ? '' : '1'; apply(); });
+    apply();
+    ul.after(btn);
+  }
+  function expandList(ul) {
+    const btn = document.getElementById(ul.id + '-more');
+    if (btn && btn.dataset.open !== '1') btn.click();
+  }
+
+  // ---- "Lock it in": on a both-free date, pick a movie and make the calendar event for it ----
+  function lockInButton(date, details) {
+    const wrap = document.createElement('span');
+    wrap.className = 'lock-wrap';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip lock';
+    btn.textContent = '🎬 Lock it in';
+    const result = document.createElement('span');
+    result.className = 'locked';
+    result.hidden = true;
+    const roll = () => {
+      const movie = movieTitles.length ? movieTitles[Math.floor(Math.random() * movieTitles.length)] : '';
+      result.innerHTML = '';
+      const line = document.createElement('span');
+      line.className = 'locked-line';
+      line.textContent = movie ? 'Locked in: ' : 'Locked in: movie night (add some movies to pick one)';
+      if (movie) {
+        const b = document.createElement('b');
+        b.textContent = movie;
+        line.appendChild(b);
+      }
+      const again = document.createElement('button');
+      again.type = 'button';
+      again.className = 'chip mini';
+      again.textContent = '🎲 Another';
+      again.hidden = movieTitles.length < 2;
+      again.addEventListener('click', roll);
+      result.append(line, calendarButtons(date, details, movie ? 'Movie night: ' + movie + ' 🎬' : ''), again);
+      result.hidden = false;
+      btn.hidden = true;
+    };
+    btn.addEventListener('click', roll);
+    wrap.append(btn, result);
+    return wrap;
+  }
 
   // ---- "Who's free" board: the next five weeks, a dot per person, lime when you're both free ----
   const PERSON_COLORS = ['#c6ff00', '#5b7bff', '#ff4de1', '#ffffff'];
-  function renderBoard(dated, people, today) {
+  function renderBoard(dated, people, today, hints) {
     const board = document.getElementById('free-board');
     if (!board) return;
     board.innerHTML = '';
@@ -593,11 +724,19 @@
       h.textContent = d.toLocaleDateString(undefined, { weekday: 'narrow' });
       grid.appendChild(h);
     }
+    let usedHints = false;
     for (let i = 0; i < 35; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const cell = document.createElement('span');
-      const e = byDay.get(ymd(d));
-      cell.className = 'board-day' + (d < today ? ' past' : '') + (+d === +today ? ' today' : '') + (e && e.both ? ' both' : '') + (e ? ' free' : '');
+      let e = byDay.get(ymd(d));
+      let usual = false;
+      // a weekday you're usually free counts as "likely" unless that date has its own row
+      if (!e && hints && d >= today && !hints.explicit.has(ymd(d)) && hints.patterns.has(d.getDay())) {
+        const p = hints.patterns.get(d.getDay());
+        if (p.names.length) { e = p; usual = true; usedHints = true; }
+      }
+      cell.className = 'board-day' + (d < today ? ' past' : '') + (+d === +today ? ' today' : '') +
+        (e ? (usual ? ' usual' : ' free') : '') + (e && e.both ? (usual ? ' usual-both' : ' both') : '');
       const num = document.createElement('b');
       num.textContent = d.getDate();
       cell.appendChild(num);
@@ -609,7 +748,8 @@
           dots.appendChild(dot);
         });
         cell.appendChild(dots);
-        cell.title = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ': ' + (e.names.join(' + ') || 'free');
+        cell.title = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ': ' +
+          (usual ? 'usually ' : '') + (e.details || 'free');
       }
       grid.appendChild(cell);
     }
@@ -626,12 +766,18 @@
     bothKey.className = 'legend-both';
     bothKey.textContent = 'Both free';
     legend.appendChild(bothKey);
+    if (usedHints) {
+      const usualKey = document.createElement('span');
+      usualKey.className = 'legend-usual';
+      usualKey.textContent = 'Usually free';
+      legend.appendChild(usualKey);
+    }
     board.append(grid, legend);
     board.hidden = false;
   }
 
-  // ---- header banner: next movie night (both free), else the next free date, else a nudge ----
-  function renderNextShow(dated, today) {
+  // ---- header banner: next movie night (both free), a suggestion from usual days, the next free date, or a nudge ----
+  function renderNextShow(dated, today, hints) {
     const box = document.getElementById('next-show');
     if (!box) return;
     box.innerHTML = '';
@@ -640,39 +786,56 @@
     box.appendChild(label);
     const both = dated.filter((e) => e.both).sort((a, b) => a.date - b.date)[0];
     const any = dated.slice().sort((a, b) => a.date - b.date)[0];
+    const gridMode = !!cfg.availabilityCsvUrl;
+    const tickUrl = cfg.availabilitySheetUrl || cfg.sheetUrl || '#dates';
     const addChip = (text) => {
       const add = document.createElement('a');
       add.className = 'chip';
       add.textContent = text;
-      add.href = cfg.datesFormUrl || '#dates';
-      if (cfg.datesFormUrl) { add.target = '_blank'; add.rel = 'noopener'; }
+      add.href = gridMode ? tickUrl : (cfg.datesFormUrl || '#dates');
+      if (/^https?:/.test(add.href) && add.getAttribute('href') !== '#dates') { add.target = '_blank'; add.rel = 'noopener'; }
       return add;
     };
-    const when = (e) => {
+    const when = (date) => {
       const w = document.createElement('span');
       w.className = 'ns-when';
-      w.textContent = e.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+      w.textContent = date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
       return w;
     };
+    // the next weekday you're both usually free, if that date has no row of its own yet
+    let suggestion = null;
+    if (!both && hints) {
+      for (let i = 0; i < 35 && !suggestion; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        const p = hints.patterns.get(d.getDay());
+        if (p && p.both && !hints.explicit.has(ymd(d))) suggestion = d;
+      }
+    }
     if (both) {
       label.textContent = 'Next movie night';
       const tag = document.createElement('span');
       tag.className = 'both-tag';
       tag.textContent = 'BOTH FREE';
-      box.append(when(both), countdown(both.date, today), tag, calendarButtons(both.date, both.details));
+      box.append(when(both.date), countdown(both.date, today), tag, lockInButton(both.date, both.details));
+    } else if (suggestion) {
+      label.textContent = 'Suggested';
+      const why = document.createElement('span');
+      why.className = 'ns-only';
+      why.textContent = "you're usually both free that day";
+      box.append(when(suggestion), countdown(suggestion, today), why, addChip('Confirm in the sheet'));
     } else if (any) {
       label.textContent = 'Next free date';
-      box.append(when(any), countdown(any.date, today));
+      box.append(when(any.date), countdown(any.date, today));
       if (any.names.length === 1) {
         const only = document.createElement('span');
         only.className = 'ns-only';
         only.textContent = 'only ' + any.names[0] + ' so far';
         box.appendChild(only);
       }
-      box.appendChild(addChip("+ I'm free too"));
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : "+ I'm free too"));
     } else {
       label.textContent = 'No showtime yet';
-      box.appendChild(addChip('+ Add a free date'));
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : '+ Add a free date'));
     }
     box.hidden = false;
   }
@@ -701,6 +864,7 @@
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
     const watchedBlock = kind === 'movies' ? document.getElementById('watched-block') : null;
+    const gridMode = kind === 'dates' && !!cfg.availabilityCsvUrl;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     if (!csvUrl) { setMessage(list, 'Not connected yet.'); return null; }
     try {
@@ -714,8 +878,8 @@
       // movies: a "Watched" column (checkboxes) moves a movie to the watched list; a "Rating" column (1-5) adds stars
       const wi = kind === 'movies' ? findCol(header, /watched|vid[eě]n|vid[eě]li/i, -1) : -1;
       const ri = kind === 'movies' ? findCol(header, /rating|hodnocen|stars|hv[eě]zd/i, -1) : -1;
-      // dates: a "Who" column says who is free, so dates you both picked can be matched
-      const whoI = kind === 'dates' ? findCol(header, /who|kdo|name|jm[eé]no/i, header.length > 2 ? 2 : -1) : -1;
+      // dates from the form: a "Who" column says who is free, so dates you both picked can be matched
+      const whoI = kind === 'dates' && !gridMode ? findCol(header, /who|kdo|name|jm[eé]no/i, header.length > 2 ? 2 : -1) : -1;
       if (watchedBlock) watchedBlock.hidden = wi < 0;
 
       const seen = readSeen(listId);
@@ -724,54 +888,63 @@
       const newKeys = [];
       currentKeys[listId] = [];
 
-      const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
       let entries = [];
-      rows.forEach((r) => {
-        const title = (r[1] || '').trim();
-        if (!title) return;
-        const key = r.join('|');
-        currentKeys[listId].push(key);
-        const entry = {
-          r, key, keys: [key], title,
-          date: kind === 'dates' ? parseDate(title, order) : null,
-          watched: wi >= 0 && isTrue(r[wi]),
-          rating: ri >= 0 ? parseRating(r[ri]) : null,
-          details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri).map((x) => x.trim()).filter(Boolean).join(' · '),
-        };
-        if (entry.date && entry.date < today) return; // outdated dates disappear
-        entries.push(entry);
-      });
-
       let dated = [];
-      const people = [];
-      if (kind === 'dates') {
-        // one showtime per day: entries for the same date are merged, and with two different names it's "both free"
-        const groups = new Map();
-        const textOnly = [];
-        rows.slice().reverse().forEach((r) => { // oldest first, so people get stable colours
-          const who = whoI >= 0 ? (r[whoI] || '').trim() : '';
-          if (who && !people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
-        });
-        entries.forEach((e) => {
-          if (!e.date) { textOnly.push(e); return; }
-          const k = ymd(e.date);
-          let g = groups.get(k);
-          if (!g) { g = { r: e.r, title: e.title, date: e.date, keys: [], names: [], notes: [] }; groups.set(k, g); }
-          g.keys.push(e.key);
-          const typed = whoI >= 0 ? (e.r[whoI] || '').trim() : '';
-          const who = typed ? people.find((p) => sameName(p, typed)) : '';
-          if (who && !g.names.includes(who)) g.names.push(who);
-          e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (i + 2 !== whoI && v && !g.notes.includes(v)) g.notes.push(v); });
-        });
-        groups.forEach((g) => g.names.sort((a, b) => people.indexOf(a) - people.indexOf(b)));
-        dated = Array.from(groups.values()).map((g) => Object.assign(g, {
-          key: g.keys[0],
-          both: g.names.length >= 2,
-          details: [g.names.join(' + '), ...g.notes].filter(Boolean).join(' · '),
-        }));
-        // both-free dates first (soonest first), then the other dates, then free-text entries
+      let people = [];
+      let hints = null;
+      if (gridMode) {
+        const g = parseGrid(parsed, today);
+        dated = g.dated;
+        people = g.people;
+        hints = g.hints;
+        dated.forEach((e) => currentKeys[listId].push(e.key));
         dated.sort((a, b) => (b.both - a.both) || (a.date - b.date));
-        entries = [...dated, ...textOnly];
+        entries = dated.slice();
+      } else {
+        const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
+        rows.forEach((r) => {
+          const title = (r[1] || '').trim();
+          if (!title) return;
+          const key = r.join('|');
+          currentKeys[listId].push(key);
+          const entry = {
+            r, key, keys: [key], title,
+            date: kind === 'dates' ? parseDate(title, order) : null,
+            watched: wi >= 0 && isTrue(r[wi]),
+            rating: ri >= 0 ? parseRating(r[ri]) : null,
+            details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri).map((x) => x.trim()).filter(Boolean).join(' · '),
+          };
+          if (entry.date && entry.date < today) return; // outdated dates disappear
+          entries.push(entry);
+        });
+        if (kind === 'dates') {
+          // one showtime per day: entries for the same date are merged, and with two different names it's "both free"
+          const groups = new Map();
+          const textOnly = [];
+          rows.slice().reverse().forEach((r) => { // oldest first, so people get stable colours
+            const who = whoI >= 0 ? (r[whoI] || '').trim() : '';
+            if (who && !people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
+          });
+          entries.forEach((e) => {
+            if (!e.date) { textOnly.push(e); return; }
+            const k = ymd(e.date);
+            let g = groups.get(k);
+            if (!g) { g = { r: e.r, title: e.title, date: e.date, keys: [], names: [], notes: [] }; groups.set(k, g); }
+            g.keys.push(e.key);
+            const typed = whoI >= 0 ? (e.r[whoI] || '').trim() : '';
+            const who = typed ? people.find((p) => sameName(p, typed)) : '';
+            if (who && !g.names.includes(who)) g.names.push(who);
+            e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (i + 2 !== whoI && v && !g.notes.includes(v)) g.notes.push(v); });
+          });
+          groups.forEach((g) => g.names.sort((a, b) => people.indexOf(a) - people.indexOf(b)));
+          dated = Array.from(groups.values()).map((g) => Object.assign(g, {
+            key: g.keys[0],
+            both: g.names.length >= 2,
+            details: [g.names.join(' + '), ...g.notes].filter(Boolean).join(' · '),
+          }));
+          dated.sort((a, b) => (b.both - a.both) || (a.date - b.date));
+          entries = [...dated, ...textOnly];
+        }
       }
 
       list.innerHTML = '';
@@ -824,7 +997,10 @@
           small.textContent = e.details;
           li.appendChild(small);
         }
-        if (e.date) { li.classList.add('has-cal'); li.appendChild(calendarButtons(e.date, e.details)); }
+        if (e.date) {
+          li.classList.add('has-cal');
+          li.appendChild(e.both ? lockInButton(e.date, e.details) : calendarButtons(e.date, e.details));
+        }
         if (kind === 'movies') {
           const row = document.createElement('span');
           row.className = 'tix-row';
@@ -840,20 +1016,27 @@
         if (e.watched) { li.classList.add('done'); watchedList.appendChild(li); } else list.appendChild(li);
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
-      if (!list.children.length) setMessage(list, kind === 'dates' ? (rows.length ? 'No upcoming dates. Add one!' : emptyText) : emptyText);
+      if (!list.children.length) {
+        setMessage(list, kind === 'dates'
+          ? (gridMode ? 'No free days ticked yet. Tick yours in the sheet!' : (rows.length ? 'No upcoming dates. Add one!' : emptyText))
+          : emptyText);
+      }
       if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
+      collapseList(list, kind === 'dates' ? 5 : 6);
+      if (watchedList) collapseList(watchedList, 4);
       if (kind === 'dates') {
-        renderNextShow(dated, today);
-        renderBoard(dated, people, today);
+        renderNextShow(dated, today, hints);
+        renderBoard(dated, people, today, hints);
         return { kind, both: dated.filter((e) => e.both).length };
       }
+      movieTitles = entries.filter((e) => !e.watched).map((e) => e.title);
       const pick = document.getElementById('pick-movie');
-      if (pick) pick.hidden = list.querySelectorAll('li:not(.muted)').length < 2;
+      if (pick) pick.hidden = movieTitles.length < 2;
       return {
         kind,
         watchedCol: wi >= 0,
         watched: entries.filter((e) => e.watched).length,
-        waiting: entries.filter((e) => !e.watched).length,
+        waiting: movieTitles.length,
         ratings,
       };
     } catch (e) {
@@ -869,10 +1052,17 @@
   wireReminder();
   wirePicker();
   setButton('add-movie', cfg.moviesFormUrl);
-  setButton('add-date', cfg.datesFormUrl);
+  if (cfg.availabilityCsvUrl) {
+    // free days are ticked in the sheet's "Free days" tab, not added with the form
+    const addDate = document.getElementById('add-date');
+    addDate.textContent = '✓ Tick your free days';
+    setButton('add-date', cfg.availabilitySheetUrl || cfg.sheetUrl);
+  } else {
+    setButton('add-date', cfg.datesFormUrl);
+  }
   Promise.all([
     fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies'),
-    fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates'),
+    fillList('date-list', cfg.availabilityCsvUrl || cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates'),
   ]).then(renderStats);
 })();
 

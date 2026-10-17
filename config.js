@@ -15,6 +15,10 @@ window.PLANNER = {
   siteUrl: 'https://j4kub0k.github.io/Birthday-surprise/',
   // Title of the monthly "Plan a movie night" reminder.
   reminderTitle: 'Plan a movie night \uD83C\uDFAC',
+  // "Free days" tab (Date | Jakub | Her checkboxes): its published CSV link, and its normal sheet link (opens the tab
+  // to tick days). When availabilityCsvUrl is set it replaces the free-dates form. Leave empty to keep using the form.
+  availabilityCsvUrl: '',
+  availabilitySheetUrl: '',
   // Only used when a slash date like 3/4/2026 is ambiguous: 'dmy' = day first, 'mdy' = month first.
   dateOrder: 'dmy',
 };
