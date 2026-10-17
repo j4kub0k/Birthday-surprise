@@ -504,6 +504,28 @@
       '&details=' + encodeURIComponent(info.description);
   }
 
+  // ---- "I watched it" form: titles typed there move matching movies to the watched list ----
+  // Titles are compared ignoring case, accents, punctuation and a leading "the".
+  const normTitle = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim().replace(/^the /, '');
+  function cleanLines(cell) {
+    return String(cell || '').split(/\r?\n/).map((s) => s.trim().replace(/^(?:[-*\u2022\u00B7]|\d{1,3}[.)])\s+/, '')).filter(Boolean);
+  }
+  async function loadWatchedTitles(url) {
+    if (!url) return [];
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const text = await res.text();
+      if (/^\s*</.test(text)) return [];
+      return parseCsv(text).slice(1).reverse().flatMap((r) => cleanLines(r[1]));
+    } catch (e) {
+      console.error('Planner: could not load the watched tab', e);
+      return [];
+    }
+  }
+  const watchedFromForm = loadWatchedTitles(cfg.watchedCsvUrl);
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
@@ -519,10 +541,10 @@
       const rows = parsed.slice(1).reverse(); // newest first
       // movies: a column whose header contains "watched" (tick it in the sheet) moves a movie to the watched list
       const wi = kind === 'movies' ? header.findIndex((h) => /watched/i.test(h)) : -1;
-      if (watchedBlock) watchedBlock.hidden = wi < 0;
-      if (!rows.length) {
+      const showWatched = wi >= 0 || !!cfg.watchedCsvUrl;
+      if (watchedBlock) watchedBlock.hidden = !showWatched;
+      if (!rows.length && kind !== 'movies') {
         setMessage(list, emptyText);
-        if (watchedList && wi >= 0) setMessage(watchedList, 'Nothing watched yet.');
         return;
       }
 
@@ -561,6 +583,19 @@
         if (entry.date && entry.date < today) return; // outdated dates disappear
         entries.push(entry);
       });
+      if (kind === 'movies') {
+        const formTitles = await watchedFromForm;
+        const done = new Set(formTitles.map(normTitle));
+        entries.forEach((e) => { if (done.has(normTitle(e.title))) e.watched = true; });
+        // watched titles that match no movie on the list (a typo, or a movie nobody added) still show up as watched
+        const known = new Set(entries.map((e) => normTitle(e.title)));
+        formTitles.forEach((t) => {
+          const k = normTitle(t);
+          if (!k || known.has(k)) return;
+          known.add(k);
+          entries.push({ r: ['', t], key: 'watched-form|' + k, title: t, date: null, watched: true });
+        });
+      }
       if (kind === 'dates') {
         // real dates first (soonest first), free-text ones after, both keeping newest-first order otherwise
         const dated = entries.filter((e) => e.date).sort((a, b) => a.date - b.date);
@@ -592,7 +627,7 @@
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
       if (!list.children.length) setMessage(list, kind === 'dates' ? 'No upcoming dates. Add one!' : emptyText);
-      if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
+      if (watchedList && showWatched && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
       setMessage(list, 'Could not reach Google (network or blocked). Try reloading.');
@@ -603,6 +638,8 @@
   const sheetLink = document.getElementById('open-sheet');
   if (cfg.sheetUrl) { sheetLink.href = cfg.sheetUrl; sheetLink.hidden = false; }
   wireReminder();
+  const markLink = document.getElementById('mark-watched');
+  if (cfg.watchedFormUrl && markLink) { markLink.href = cfg.watchedFormUrl; markLink.hidden = false; }
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
   fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');
