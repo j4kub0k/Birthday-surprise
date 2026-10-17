@@ -715,15 +715,21 @@
     btn.type = 'button';
     btn.className = 'chip lock';
     btn.textContent = '🎬 Lock it in';
+    // or lock just the date and decide on the movie later
+    const plain = document.createElement('button');
+    plain.type = 'button';
+    plain.className = 'chip lock-plain';
+    plain.textContent = '\uD83D\uDCC5 Just the date';
     const result = document.createElement('span');
     result.className = 'locked';
     result.hidden = true;
-    const roll = () => {
-      const movie = movieTitles.length ? movieTitles[Math.floor(Math.random() * movieTitles.length)] : '';
+    const lock = (withMovie) => {
+      const movie = withMovie && movieTitles.length ? movieTitles[Math.floor(Math.random() * movieTitles.length)] : '';
       result.innerHTML = '';
       const line = document.createElement('span');
       line.className = 'locked-line';
-      line.textContent = movie ? 'Locked in: ' : 'Locked in: movie night (add some movies to pick one)';
+      line.textContent = movie ? 'Locked in: ' : withMovie && !movieTitles.length
+        ? 'Locked in: movie night (add some movies to pick one)' : 'Locked in: movie night, movie to be decided';
       if (movie) {
         const b = document.createElement('b');
         b.textContent = movie;
@@ -732,16 +738,26 @@
       const again = document.createElement('button');
       again.type = 'button';
       again.className = 'chip mini';
-      again.textContent = '🎲 Another';
-      again.hidden = movieTitles.length < 2;
-      again.addEventListener('click', roll);
-      result.append(line, calendarButtons(date, details, movie ? 'Movie night: ' + movie + ' 🎬' : ''), again);
+      again.textContent = movie ? '\uD83C\uDFB2 Another' : '\uD83C\uDFB2 Pick a movie';
+      again.hidden = movie ? movieTitles.length < 2 : !movieTitles.length;
+      again.addEventListener('click', () => lock(true));
+      result.append(line, calendarButtons(date, details, movie ? 'Movie night: ' + movie + ' \uD83C\uDFAC' : ''), again);
+      if (movie) {
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'chip mini';
+        skip.textContent = 'No movie yet';
+        skip.addEventListener('click', () => lock(false));
+        result.appendChild(skip);
+      }
       result.hidden = false;
       btn.hidden = true;
-      say(movie ? movie + " it is! Don't forget snacks \uD83C\uDF7F" : 'Movie night locked in! \uD83C\uDFAC');
+      plain.hidden = true;
+      say(movie ? movie + " it is! Don't forget snacks \uD83C\uDF7F" : 'Movie night locked in! Pick the movie whenever \uD83C\uDFAC');
     };
-    btn.addEventListener('click', roll);
-    wrap.append(btn, result);
+    btn.addEventListener('click', () => lock(true));
+    plain.addEventListener('click', () => lock(false));
+    wrap.append(btn, plain, result);
     return wrap;
   }
 
