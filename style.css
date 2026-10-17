@@ -470,3 +470,24 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 .button.secondary:hover { background: rgba(198, 255, 0, 0.12); }
 
 .hud-empty { margin: 0; padding: 70px 16px; text-align: center; font: 700 0.7rem/1.4 var(--mono); letter-spacing: 0.14em; color: var(--lime); }
+
+/* Add-to-calendar chips on upcoming dates */
+.planner-list li.has-cal { border-radius: 22px; }
+.cal-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--lime);
+  font: 700 0.62rem/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--lime);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip:hover { background: var(--lime); color: #000; }
+.chip:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
