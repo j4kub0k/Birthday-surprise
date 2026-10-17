@@ -1285,6 +1285,24 @@
   };
   avatar.addEventListener('click', () => window.taraSay('Woof! \uD83D\uDC3E'));
 
+  // A link that opens a new tab right after Tara spoke waits a moment, so the message can be read first
+  let saidAt = 0, opening = false;
+  const sayRaw = window.taraSay;
+  window.taraSay = (text) => { saidAt = Date.now(); sayRaw(text); };
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest && ev.target.closest('a[target="_blank"]');
+    if (!a || ev.defaultPrevented || ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+    if (!/^https?:/.test(a.href) || Date.now() - saidAt > 150) return; // only links that just made Tara talk
+    ev.preventDefault();
+    if (opening) return;
+    opening = true;
+    setTimeout(() => {
+      opening = false;
+      const w = window.open(a.href, '_blank');
+      if (w) w.opener = null; else window.location.href = a.href; // popup blocked: open it right here
+    }, 1000);
+  });
+
   const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (still) { tara.classList.add('sitting'); return; }
 
