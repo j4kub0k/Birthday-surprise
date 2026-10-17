@@ -762,10 +762,6 @@ body::after {
 }
 .tara svg { display: block; width: 100%; height: 100%; filter: drop-shadow(2px 2px 0 rgba(31, 63, 255, 0.9)); }
 .tara .legs-1 { visibility: hidden; }
-.tara.walking { animation: tara-walk 16s linear 1; }
-.tara.walking .legs-0 { animation: legs-a 0.36s linear infinite; }
-.tara.walking .legs-1 { animation: legs-b 0.36s linear infinite; }
-@keyframes tara-walk { from { transform: translateX(-90px); } to { transform: translateX(calc(100vw + 20px)); } }
 @keyframes legs-a { 0%, 49% { visibility: visible; } 50%, 100% { visibility: hidden; } }
 @keyframes legs-b { 0%, 49% { visibility: hidden; } 50%, 100% { visibility: visible; } }
 .tara.sitting { left: auto; right: 12px; transform: none; }
@@ -878,3 +874,16 @@ body::after {
   .tara-pop { transition: none; transform: none; }
   .tara-pop.show .tara-face { animation: none; }
 }
+
+/* lively walking Tara: poses set by the walking engine in planner.js */
+.tara.left svg { transform: scaleX(-1); }
+.tara .tail-down { visibility: hidden; }
+.tara.trot .legs-0 { animation: legs-a 0.36s linear infinite; }
+.tara.trot .legs-1 { animation: legs-b 0.36s linear infinite; }
+.tara.running .legs-0,
+.tara.running .legs-1 { animation-duration: 0.16s; }
+.tara.wagging .tail-up { animation: legs-a 0.22s linear infinite; }
+.tara.wagging .tail-down { animation: legs-b 0.22s linear infinite; }
+.tara.sniffing .head { animation: sniff 0.5s steps(1, end) infinite; }
+@keyframes sniff { 0% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+.tara.left .tara-bubble { left: auto; right: 56px; }
