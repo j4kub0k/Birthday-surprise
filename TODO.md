@@ -15,6 +15,7 @@ Things only you can do in Google / GitHub. Details for every step are in `SETUP-
   - In the responses tab, select the Jakub and Adela columns from row 2 down -> **Insert -> Checkbox**, so new rows also get checkboxes.
   - Optional cleanup: delete the empty row 2 (it is harmless).
 - [ ] *(Optional, instead of the form)* a separate **Free days** tab, see `SETUP-GOOGLE.md` -> "Free days tab". Not needed if you use the form with the name question.
+- [ ] *(Optional)* **Delete past dates automatically** so the sheet never fills up: paste `cleanup-old-dates.gs` into the sheet (Extensions -> Apps Script) and run `installDailyCleanup` once. Steps in `SETUP-GOOGLE.md` -> "Automatic cleanup of past dates".
 - [ ] **Share the spreadsheet with her** as **Editor** with "Notify people" **unticked** (keeps the surprise). She needs it to tick free days and watched movies.
 - [ ] **Movies form**: make sure the movie question is **Short answer** again (one movie per answer).
 - [ ] **Merge the open pull request** (or ask Claude to), wait a few minutes for GitHub Pages, then check the site on your phone:
