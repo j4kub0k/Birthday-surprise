@@ -33,6 +33,11 @@ For each of the two response tabs in the sheet:
 - Entries typed as free text (for example "Fri 14 Nov evening", or older answers from before the question became a Date) cannot be checked, so they always stay visible. Delete those rows in the sheet when they are done.
 - Slash dates such as 3/4/2026 are ambiguous. The site works out day-first or month-first from your other dates; if it can't tell, it uses `dateOrder` in `config.js` ('dmy' or 'mdy').
 
+## Monthly reminder
+- The page has a **Remind me monthly** button (and a **Google** one). It adds a repeating calendar event, "Plan a movie night", on the first Saturday of every month at 17:00, with an alert and a link back to the site. The first one is next month (or this month if the first Saturday is still more than a day away).
+- It only works if the person taps it once. After that, his own calendar keeps reminding him.
+- Change the title with `reminderTitle` and the link with `siteUrl` in `config.js`. The day and time are in `planner.js` (search for `BYDAY=1SA`).
+
 ## Notes
 - The first column of each tab is the automatic timestamp; the site shows the 2nd column as the title and the others as details, newest first.
 - Published sheets and form links are readable by anyone who has the link. Don't put anything private in them.

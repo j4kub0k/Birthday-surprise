@@ -11,6 +11,10 @@ window.PLANNER = {
   sheetUrl: 'https://docs.google.com/spreadsheets/d/1-PAB5xC_cbaK7Uq_JHguQt2GyoEufsphERUM84tVbzQ/edit?gid=232171872#gid=232171872',
   // Title of the calendar event created by the "Add to calendar" buttons on upcoming dates.
   eventTitle: 'Movie night \uD83C\uDFAC',
+  // Address of this site, put into the calendar reminders so they link back here. Leave empty to use the address the page is opened on.
+  siteUrl: 'https://j4kub0k.github.io/Birthday-surprise/',
+  // Title of the monthly "Plan a movie night" reminder.
+  reminderTitle: 'Plan a movie night \uD83C\uDFAC',
   // Only used when a slash date like 3/4/2026 is ambiguous: 'dmy' = day first, 'mdy' = month first.
   dateOrder: 'dmy',
 };

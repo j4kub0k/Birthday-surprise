@@ -438,6 +438,72 @@
     return row;
   }
 
+  // ---- Monthly reminder: a repeating calendar event (first Saturday of the month, 17:00) that links back to this page ----
+  function floatingStamp(d) {
+    return ymd(d) + 'T' + pad2(d.getHours()) + pad2(d.getMinutes()) + '00';
+  }
+  function firstSaturday(year, month) {
+    const first = new Date(year, month, 1, 17, 0, 0);
+    return new Date(year, month, 1 + (6 - first.getDay() + 7) % 7, 17, 0, 0);
+  }
+  // first reminder: the first Saturday of this month, or of next month if that is less than a day away or already past
+  function firstReminder() {
+    const now = new Date();
+    let d = firstSaturday(now.getFullYear(), now.getMonth());
+    if (d - now < 24 * 60 * 60 * 1000) d = firstSaturday(now.getFullYear(), now.getMonth() + 1);
+    return d;
+  }
+  function reminderInfo() {
+    const url = cfg.siteUrl || (/^https?:/.test(location.href) ? location.origin + location.pathname : '');
+    const lines = ['Time to plan a movie night: look at the movies waiting and the free dates.'];
+    if (url) lines.push(url);
+    return { title: cfg.reminderTitle || 'Plan a movie night \uD83C\uDFAC', description: lines.join('\n'), url };
+  }
+  function buildReminderIcs(start, info) {
+    const end = new Date(start.getTime() + 15 * 60 * 1000);
+    const now = new Date();
+    const stamp = now.getUTCFullYear() + pad2(now.getUTCMonth() + 1) + pad2(now.getUTCDate()) + 'T' +
+      pad2(now.getUTCHours()) + pad2(now.getUTCMinutes()) + pad2(now.getUTCSeconds()) + 'Z';
+    return [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Movie Night Planner//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:monthly-movie-night-reminder@birthday-surprise',
+      'DTSTAMP:' + stamp,
+      'DTSTART:' + floatingStamp(start),
+      'DTEND:' + floatingStamp(end),
+      'RRULE:FREQ=MONTHLY;BYDAY=1SA',
+      'SUMMARY:' + icsEscape(info.title),
+      'DESCRIPTION:' + icsEscape(info.description),
+      ...(info.url ? ['URL:' + info.url] : []),
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEscape(info.title), 'TRIGGER:PT0S', 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].map(foldLine).join('\r\n') + '\r\n';
+  }
+  function wireReminder() {
+    const icsBtn = document.getElementById('remind-ics');
+    const gLink = document.getElementById('remind-google');
+    if (!icsBtn || !gLink) return;
+    const start = firstReminder();
+    const end = new Date(start.getTime() + 15 * 60 * 1000);
+    const info = reminderInfo();
+    icsBtn.addEventListener('click', () => {
+      const blob = new Blob([buildReminderIcs(start, info)], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'movie-night-monthly-reminder.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    });
+    gLink.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+      '&text=' + encodeURIComponent(info.title) +
+      '&dates=' + floatingStamp(start) + '/' + floatingStamp(end) +
+      '&recur=' + encodeURIComponent('RRULE:FREQ=MONTHLY;BYDAY=1SA') +
+      '&details=' + encodeURIComponent(info.description);
+  }
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
@@ -519,6 +585,7 @@
   // Link to the Google Sheet itself (the normal /edit link) so a movie can be ticked as watched; hidden until set in config.js
   const sheetLink = document.getElementById('open-sheet');
   if (cfg.sheetUrl) { sheetLink.href = cfg.sheetUrl; sheetLink.hidden = false; }
+  wireReminder();
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
   fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');
