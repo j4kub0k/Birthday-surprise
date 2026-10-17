@@ -536,11 +536,28 @@
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const entries = [];
       rows.forEach((r) => {
-        const title = (r[1] || '').trim();
-        if (!title) return;
+        const cell = (r[1] || '').trim();
+        if (!cell) return;
+        const rowWatched = wi >= 0 && isTrue(r[wi]);
+        if (kind === 'movies') {
+          // one submission can hold a whole list, one movie per line; a line may start with a bullet or number,
+          // and a leading check mark (typed in the sheet) marks just that movie as watched
+          const lines = cell.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+          lines.forEach((line, idx) => {
+            let title = line.replace(/^(?:[-*\u2022\u00B7]|\d{1,3}[.)])\s+/, '');
+            let watched = rowWatched;
+            const mark = /^(?:\u2713|\u2714|\[x\]|\(x\))\s*/i.exec(title);
+            if (mark) { watched = true; title = title.slice(mark[0].length).trim(); }
+            if (!title) return;
+            const key = lines.length > 1 ? r.join('|') + '#' + idx : r.join('|'); // single movies keep their old key
+            currentKeys[listId].push(key);
+            entries.push({ r, key, title, date: null, watched });
+          });
+          return;
+        }
         const key = r.join('|');
         currentKeys[listId].push(key);
-        const entry = { r, key, title, date: kind === 'dates' ? parseDate(title, order) : null, watched: wi >= 0 && isTrue(r[wi]) };
+        const entry = { r, key, title: cell, date: kind === 'dates' ? parseDate(cell, order) : null, watched: rowWatched };
         if (entry.date && entry.date < today) return; // outdated dates disappear
         entries.push(entry);
       });
