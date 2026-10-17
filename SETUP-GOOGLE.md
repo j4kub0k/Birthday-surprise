@@ -38,6 +38,15 @@ For each of the two response tabs in the sheet:
 - It only works if the person taps it once. After that, his own calendar keeps reminding him.
 - Change the title with `reminderTitle` and the link with `siteUrl` in `config.js`. The day and time are in `planner.js` (search for `BYDAY=1SA`).
 
+## Finding when you're both free
+- Give the **Free dates** form a second question **Who?** (Multiple choice with your two names is best, so the spelling always matches). The site then merges the same date from both of you into one showtime marked **BOTH FREE**, sorts those first, lights them up in the **Who's free** board (next five weeks, a coloured dot per person), and the header banner shows the next movie night.
+- If only one of you has picked a date, the banner shows it with "only <name> so far" and an "I'm free too" button.
+- Without a Who question everything still works, it just can't tell who is free.
+
+## Ratings and stats
+- In the movies tab, add a column named **Rating** next to Watched and type 1-5 (8/10 and stars like ★★★★ work too). Watched movies show the stars, and the header shows "N watched together · N waiting · N both-free dates · avg ★".
+- Every movie has a **ČSFD** button that searches for it on csfd.cz.
+
 ## Notes
 - The first column of each tab is the automatic timestamp; the site shows the 2nd column as the title and the others as details, newest first.
 - Published sheets and form links are readable by anyone who has the link. Don't put anything private in them.

@@ -520,32 +520,6 @@
   }
   const rowDetails = (r) => r.slice(2).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
 
-  // ---- "Next showing" banner in the header: the soonest free date, or a nudge to add one ----
-  function renderNextShow(next, today) {
-    const box = document.getElementById('next-show');
-    if (!box) return;
-    box.innerHTML = '';
-    const label = document.createElement('span');
-    label.className = 'ns-label';
-    box.appendChild(label);
-    if (next) {
-      label.textContent = 'Next showing';
-      const when = document.createElement('span');
-      when.className = 'ns-when';
-      when.textContent = next.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-      box.append(when, countdown(next.date, today), calendarButtons(next.date, rowDetails(next.r)));
-    } else {
-      label.textContent = 'No showtime yet';
-      const add = document.createElement('a');
-      add.className = 'chip';
-      add.textContent = '+ Add a free date';
-      add.href = cfg.datesFormUrl || '#dates';
-      if (cfg.datesFormUrl) { add.target = '_blank'; add.rel = 'noopener'; }
-      box.appendChild(add);
-    }
-    box.hidden = false;
-  }
-
   // ---- "Pick for me": spins through the movie tickets and lands on a random one ----
   function wirePicker() {
     const btn = document.getElementById('pick-movie');
@@ -582,28 +556,167 @@
     });
   }
 
+  // ---- column helpers, ratings, ČSFD ----
+  const findCol = (header, re, fallback) => { const i = header.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
+  // "4", "4/5", "8/10", "4,5" or "★★★★" -> a number from 0 to 5
+  function parseRating(v) {
+    const s = String(v || '').trim();
+    if (!s) return null;
+    const stars = (s.match(/★/g) || []).length;
+    if (stars) return Math.min(5, stars);
+    const m = /(\d+(?:[.,]\d+)?)/.exec(s);
+    if (!m) return null;
+    let n = parseFloat(m[1].replace(',', '.'));
+    if (/\/\s*10\b/.test(s) || n > 5) n /= 2;
+    return n > 0 ? Math.min(5, n) : null;
+  }
+  const starsText = (n) => { const r = Math.round(n); return '★'.repeat(r) + '☆'.repeat(5 - r); };
+  const csfdUrl = (title) => 'https://www.csfd.cz/hledat/?q=' + encodeURIComponent(title);
+  const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+  // ---- "Who's free" board: the next five weeks, a dot per person, lime when you're both free ----
+  const PERSON_COLORS = ['#c6ff00', '#5b7bff', '#ff4de1', '#ffffff'];
+  function renderBoard(dated, people, today) {
+    const board = document.getElementById('free-board');
+    if (!board) return;
+    board.innerHTML = '';
+    const byDay = new Map(dated.map((e) => [ymd(e.date), e]));
+    const color = (name) => PERSON_COLORS[Math.max(0, people.findIndex((p) => sameName(p, name))) % PERSON_COLORS.length];
+    const start = new Date(today);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // Monday of this week
+    const grid = document.createElement('div');
+    grid.className = 'board-grid';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const h = document.createElement('span');
+      h.className = 'board-dow';
+      h.textContent = d.toLocaleDateString(undefined, { weekday: 'narrow' });
+      grid.appendChild(h);
+    }
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const cell = document.createElement('span');
+      const e = byDay.get(ymd(d));
+      cell.className = 'board-day' + (d < today ? ' past' : '') + (+d === +today ? ' today' : '') + (e && e.both ? ' both' : '') + (e ? ' free' : '');
+      const num = document.createElement('b');
+      num.textContent = d.getDate();
+      cell.appendChild(num);
+      if (e) {
+        const dots = document.createElement('i');
+        (e.names.length ? e.names : ['?']).forEach((n) => {
+          const dot = document.createElement('span');
+          dot.style.background = e.names.length ? color(n) : '#fff';
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+        cell.title = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ': ' + (e.names.join(' + ') || 'free');
+      }
+      grid.appendChild(cell);
+    }
+    const legend = document.createElement('div');
+    legend.className = 'board-legend';
+    people.forEach((p) => {
+      const item = document.createElement('span');
+      const dot = document.createElement('i');
+      dot.style.background = color(p);
+      item.append(dot, document.createTextNode(p));
+      legend.appendChild(item);
+    });
+    const bothKey = document.createElement('span');
+    bothKey.className = 'legend-both';
+    bothKey.textContent = 'Both free';
+    legend.appendChild(bothKey);
+    board.append(grid, legend);
+    board.hidden = false;
+  }
+
+  // ---- header banner: next movie night (both free), else the next free date, else a nudge ----
+  function renderNextShow(dated, today) {
+    const box = document.getElementById('next-show');
+    if (!box) return;
+    box.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'ns-label';
+    box.appendChild(label);
+    const both = dated.filter((e) => e.both).sort((a, b) => a.date - b.date)[0];
+    const any = dated.slice().sort((a, b) => a.date - b.date)[0];
+    const addChip = (text) => {
+      const add = document.createElement('a');
+      add.className = 'chip';
+      add.textContent = text;
+      add.href = cfg.datesFormUrl || '#dates';
+      if (cfg.datesFormUrl) { add.target = '_blank'; add.rel = 'noopener'; }
+      return add;
+    };
+    const when = (e) => {
+      const w = document.createElement('span');
+      w.className = 'ns-when';
+      w.textContent = e.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+      return w;
+    };
+    if (both) {
+      label.textContent = 'Next movie night';
+      const tag = document.createElement('span');
+      tag.className = 'both-tag';
+      tag.textContent = 'BOTH FREE';
+      box.append(when(both), countdown(both.date, today), tag, calendarButtons(both.date, both.details));
+    } else if (any) {
+      label.textContent = 'Next free date';
+      box.append(when(any), countdown(any.date, today));
+      if (any.names.length === 1) {
+        const only = document.createElement('span');
+        only.className = 'ns-only';
+        only.textContent = 'only ' + any.names[0] + ' so far';
+        box.appendChild(only);
+      }
+      box.appendChild(addChip("+ I'm free too"));
+    } else {
+      label.textContent = 'No showtime yet';
+      box.appendChild(addChip('+ Add a free date'));
+    }
+    box.hidden = false;
+  }
+
+  function renderStats(results) {
+    const el = document.getElementById('stats');
+    if (!el) return;
+    const movies = results.find((r) => r && r.kind === 'movies');
+    const dates = results.find((r) => r && r.kind === 'dates');
+    const parts = [];
+    if (movies) {
+      if (movies.watchedCol) parts.push(movies.watched + ' watched together');
+      parts.push(movies.waiting + ' waiting');
+    }
+    if (dates) parts.push(dates.both + ' both-free date' + (dates.both === 1 ? '' : 's'));
+    if (movies && movies.ratings.length) {
+      const avg = movies.ratings.reduce((a, b) => a + b, 0) / movies.ratings.length;
+      parts.push('avg ★ ' + avg.toFixed(1));
+    }
+    if (!parts.length) return;
+    el.textContent = parts.join('  ·  ');
+    el.hidden = false;
+  }
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
     const watchedBlock = kind === 'movies' ? document.getElementById('watched-block') : null;
-    if (!csvUrl) { setMessage(list, 'Not connected yet.'); return; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (!csvUrl) { setMessage(list, 'Not connected yet.'); return null; }
     try {
       const res = await fetch(csvUrl);
-      if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return; }
+      if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return null; }
       const text = await res.text();
-      if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return; }
+      if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return null; }
       const parsed = parseCsv(text);
       const header = parsed[0] || [];
       const rows = parsed.slice(1).reverse(); // newest first
-      // movies: a column whose header contains "watched" (tick it in the sheet) moves a movie to the watched list
-      const wi = kind === 'movies' ? header.findIndex((h) => /watched/i.test(h)) : -1;
+      // movies: a "Watched" column (checkboxes) moves a movie to the watched list; a "Rating" column (1-5) adds stars
+      const wi = kind === 'movies' ? findCol(header, /watched|vid[eě]n|vid[eě]li/i, -1) : -1;
+      const ri = kind === 'movies' ? findCol(header, /rating|hodnocen|stars|hv[eě]zd/i, -1) : -1;
+      // dates: a "Who" column says who is free, so dates you both picked can be matched
+      const whoI = kind === 'dates' ? findCol(header, /who|kdo|name|jm[eé]no/i, header.length > 2 ? 2 : -1) : -1;
       if (watchedBlock) watchedBlock.hidden = wi < 0;
-      if (!rows.length) {
-        setMessage(list, emptyText);
-        if (watchedList && wi >= 0) setMessage(watchedList, 'Nothing watched yet.');
-        if (kind === 'dates') { const t = new Date(); t.setHours(0, 0, 0, 0); renderNextShow(null, t); }
-        return;
-      }
 
       const seen = readSeen(listId);
       let keptNew = [];
@@ -612,30 +725,64 @@
       currentKeys[listId] = [];
 
       const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const entries = [];
+      let entries = [];
       rows.forEach((r) => {
         const title = (r[1] || '').trim();
         if (!title) return;
         const key = r.join('|');
         currentKeys[listId].push(key);
-        const entry = { r, key, title, date: kind === 'dates' ? parseDate(title, order) : null, watched: wi >= 0 && isTrue(r[wi]) };
+        const entry = {
+          r, key, keys: [key], title,
+          date: kind === 'dates' ? parseDate(title, order) : null,
+          watched: wi >= 0 && isTrue(r[wi]),
+          rating: ri >= 0 ? parseRating(r[ri]) : null,
+          details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri).map((x) => x.trim()).filter(Boolean).join(' · '),
+        };
         if (entry.date && entry.date < today) return; // outdated dates disappear
         entries.push(entry);
       });
+
+      let dated = [];
+      const people = [];
       if (kind === 'dates') {
-        // real dates first (soonest first), free-text ones after, both keeping newest-first order otherwise
-        const dated = entries.filter((e) => e.date).sort((a, b) => a.date - b.date);
-        entries.splice(0, entries.length, ...dated, ...entries.filter((e) => !e.date));
+        // one showtime per day: entries for the same date are merged, and with two different names it's "both free"
+        const groups = new Map();
+        const textOnly = [];
+        rows.slice().reverse().forEach((r) => { // oldest first, so people get stable colours
+          const who = whoI >= 0 ? (r[whoI] || '').trim() : '';
+          if (who && !people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
+        });
+        entries.forEach((e) => {
+          if (!e.date) { textOnly.push(e); return; }
+          const k = ymd(e.date);
+          let g = groups.get(k);
+          if (!g) { g = { r: e.r, title: e.title, date: e.date, keys: [], names: [], notes: [] }; groups.set(k, g); }
+          g.keys.push(e.key);
+          const typed = whoI >= 0 ? (e.r[whoI] || '').trim() : '';
+          const who = typed ? people.find((p) => sameName(p, typed)) : '';
+          if (who && !g.names.includes(who)) g.names.push(who);
+          e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (i + 2 !== whoI && v && !g.notes.includes(v)) g.notes.push(v); });
+        });
+        groups.forEach((g) => g.names.sort((a, b) => people.indexOf(a) - people.indexOf(b)));
+        dated = Array.from(groups.values()).map((g) => Object.assign(g, {
+          key: g.keys[0],
+          both: g.names.length >= 2,
+          details: [g.names.join(' + '), ...g.notes].filter(Boolean).join(' · '),
+        }));
+        // both-free dates first (soonest first), then the other dates, then free-text entries
+        dated.sort((a, b) => (b.both - a.both) || (a.date - b.date));
+        entries = [...dated, ...textOnly];
       }
 
       list.innerHTML = '';
       if (watchedList) watchedList.innerHTML = '';
+      const ratings = [];
       entries.forEach((e) => {
         const li = document.createElement('li');
         if (e.date) {
           // showtime: day number and month in the ticket stub, weekday + how soon it is in the row
           li.classList.add('showtime');
+          if (e.both) li.classList.add('both');
           const stub = document.createElement('span');
           stub.className = 'stub';
           const dnum = document.createElement('b');
@@ -647,36 +794,72 @@
           li.appendChild(document.createTextNode(e.date.toLocaleDateString(undefined, { weekday: 'long' }) +
             (e.date.getFullYear() !== today.getFullYear() ? ' ' + e.date.getFullYear() : '')));
           li.appendChild(countdown(e.date, today));
+          if (e.both) {
+            const tag = document.createElement('span');
+            tag.className = 'both-tag';
+            tag.textContent = 'BOTH FREE';
+            li.appendChild(tag);
+          }
         } else {
           li.textContent = e.title;
         }
-        if (!e.watched && ((seen && !seen.includes(e.key)) || keptNew.includes(e.key))) {
-          newKeys.push(e.key);
+        if (e.rating) {
+          ratings.push(e.rating);
+          const st = document.createElement('span');
+          st.className = 'stars';
+          st.textContent = starsText(e.rating);
+          st.setAttribute('aria-label', e.rating + ' out of 5');
+          li.appendChild(st);
+        }
+        const isNew = !e.watched && e.keys.some((k) => (seen && !seen.includes(k)) || keptNew.includes(k));
+        if (isNew) {
+          newKeys.push(...e.keys);
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = 'NEW';
           li.appendChild(badge);
         }
-        const details = e.r.slice(2).filter((x, i) => i + 2 !== wi).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
-        if (details) {
+        if (e.details) {
           const small = document.createElement('small');
-          small.textContent = details;
+          small.textContent = e.details;
           li.appendChild(small);
         }
-        if (e.date) { li.classList.add('has-cal'); li.appendChild(calendarButtons(e.date, details)); }
-        if (e.watched) { li.className = 'done'; watchedList.appendChild(li); } else list.appendChild(li);
+        if (e.date) { li.classList.add('has-cal'); li.appendChild(calendarButtons(e.date, e.details)); }
+        if (kind === 'movies') {
+          const row = document.createElement('span');
+          row.className = 'tix-row';
+          const c = document.createElement('a');
+          c.className = 'chip mini';
+          c.href = csfdUrl(e.title);
+          c.target = '_blank';
+          c.rel = 'noopener';
+          c.textContent = 'ČSFD ↗';
+          row.appendChild(c);
+          li.appendChild(row);
+        }
+        if (e.watched) { li.classList.add('done'); watchedList.appendChild(li); } else list.appendChild(li);
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
-      if (!list.children.length) setMessage(list, kind === 'dates' ? 'No upcoming dates. Add one!' : emptyText);
-      if (kind === 'dates') renderNextShow(entries.find((e) => e.date) || null, today);
-      if (kind === 'movies') {
-        const pick = document.getElementById('pick-movie');
-        if (pick) pick.hidden = list.querySelectorAll('li:not(.muted)').length < 2;
-      }
+      if (!list.children.length) setMessage(list, kind === 'dates' ? (rows.length ? 'No upcoming dates. Add one!' : emptyText) : emptyText);
       if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
+      if (kind === 'dates') {
+        renderNextShow(dated, today);
+        renderBoard(dated, people, today);
+        return { kind, both: dated.filter((e) => e.both).length };
+      }
+      const pick = document.getElementById('pick-movie');
+      if (pick) pick.hidden = list.querySelectorAll('li:not(.muted)').length < 2;
+      return {
+        kind,
+        watchedCol: wi >= 0,
+        watched: entries.filter((e) => e.watched).length,
+        waiting: entries.filter((e) => !e.watched).length,
+        ratings,
+      };
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
       setMessage(list, 'Could not reach Google (network or blocked). Try reloading.');
+      return null;
     }
   }
 
@@ -687,6 +870,81 @@
   wirePicker();
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
-  fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');
-  fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates');
+  Promise.all([
+    fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies'),
+    fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates'),
+  ]).then(renderStats);
+})();
+
+// Pixel Tara: a tiny pixel-art dachshund who trots along the bottom of the screen now and then.
+// Tapping her opens the dog corner. With reduced motion she just sits in the corner.
+(function pixelTara() {
+  const B = '#c8692b', D = '#7a3a12', K = '#111', L = '#c6ff00';
+  // 24 x 10 pixels, facing right: long body, tail up, floppy dark ear, lime collar. Two leg frames for the trot.
+  const BODY = [
+    '..................BBB...',
+    '.................BBBBB..',
+    '.................BKBBBBB',
+    '..D.............DDBBBBBK',
+    '...D............DDBBB...',
+    '....BBBBBBBBBBBBLLBB....',
+    '....BBBBBBBBBBBBBBB.....',
+    '.....BBBBBBBBBBBBB......',
+  ];
+  const LEGS = [
+    ['.....BB.......BB........', '.....D........D.........'],
+    ['......BB.......BB.......', '.......D........D.......'],
+  ];
+  const colors = { B, D, K, L };
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 10');
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  svg.setAttribute('aria-hidden', 'true');
+  const paint = (rows, y0, parent) => rows.forEach((row, y) => [...row].forEach((c, x) => {
+    if (!colors[c]) return;
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y0 + y); r.setAttribute('width', 1.02); r.setAttribute('height', 1.02);
+    r.setAttribute('fill', colors[c]);
+    parent.appendChild(r);
+  }));
+  paint(BODY, 0, svg);
+  LEGS.forEach((frame, i) => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'legs legs-' + i);
+    paint(frame, 8, g);
+    svg.appendChild(g);
+  });
+  const tara = document.createElement('button');
+  tara.type = 'button';
+  tara.className = 'tara';
+  tara.setAttribute('aria-label', 'Tara. Open the dog corner');
+  const bubble = document.createElement('span');
+  bubble.className = 'tara-bubble';
+  bubble.textContent = 'woof!';
+  tara.append(svg, bubble);
+  document.body.appendChild(tara);
+
+  tara.addEventListener('click', () => {
+    tara.classList.add('barking');
+    setTimeout(() => tara.classList.remove('barking'), 1200);
+    const dogs = document.getElementById('dogs');
+    const det = dogs && dogs.querySelector('details');
+    if (det && !det.open) det.open = true;
+    if (dogs) dogs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) { tara.classList.add('sitting'); return; }
+  const walk = () => {
+    tara.classList.remove('walking');
+    void tara.offsetWidth; // restart the animation
+    tara.classList.add('walking');
+  };
+  tara.addEventListener('animationend', (e) => {
+    if (e.animationName !== 'tara-walk') return;
+    tara.classList.remove('walking');
+    setTimeout(walk, 25000 + Math.random() * 35000); // next stroll in 25-60 s
+  });
+  setTimeout(walk, 3500);
 })();

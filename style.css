@@ -681,3 +681,112 @@ body::after {
 }
 .chip:disabled { opacity: 0.6; cursor: wait; }
 @media (prefers-reduced-motion: reduce) { .ns-label::before { animation: none; } }
+
+/* stats line under the ticker */
+.stats {
+  margin: 12px 0 0;
+  font: 700 0.68rem/1.5 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* both free: lime ticket, tag, and banner tag */
+.both-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  background: var(--blue);
+  color: #fff;
+  font: 800 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.showtimes li.both {
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.22), rgba(198, 255, 0, 0.04) 60%), #141414;
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}
+.next-show .both-tag { margin-left: 0; }
+.ns-only { font: 400 0.7rem/1.2 var(--mono); letter-spacing: 0.06em; opacity: 0.8; }
+
+/* "Who's free" board: next five weeks */
+.free-board { width: 100%; display: grid; gap: 10px; }
+.board-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.board-dow { text-align: center; font: 700 0.6rem/1.6 var(--mono); letter-spacing: 0.12em; color: var(--lime); text-transform: uppercase; }
+.board-day {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font: 700 0.72rem/1 var(--mono);
+}
+.board-day b { font-weight: 700; }
+.board-day.past { opacity: 0.3; }
+.board-day.today { border-color: #fff; }
+.board-day.free { border-color: rgba(198, 255, 0, 0.6); }
+.board-day.both { background: var(--lime); color: #000; border-color: var(--lime); box-shadow: 3px 3px 0 var(--blue); }
+.board-day i { display: flex; gap: 2px; }
+.board-day i span { width: 6px; height: 6px; border-radius: 50%; }
+.board-day.both i span { box-shadow: 0 0 0 1px #000; }
+.board-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 700 0.62rem/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.board-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.board-legend i { width: 8px; height: 8px; border-radius: 50%; }
+.legend-both::before { content: ""; width: 12px; height: 12px; background: var(--lime); box-shadow: 2px 2px 0 var(--blue); }
+
+/* ratings and ČSFD on movie tickets */
+.stars { margin-left: 8px; color: var(--lime); letter-spacing: 0.06em; font-size: 0.85rem; }
+.tickets li.done .stars { text-decoration: none; display: inline-block; opacity: 1; }
+.tix-row { display: flex; gap: 6px; margin-top: 6px; }
+.chip.mini { min-height: 26px; padding: 0 8px; font-size: 0.56rem; }
+.tickets li.done { text-decoration: none; }
+.tickets li.done > small { text-decoration: line-through; }
+
+/* Pixel Tara */
+.tara {
+  position: fixed;
+  left: 0;
+  bottom: 34px;
+  z-index: 45;
+  width: 84px;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform: translateX(-90px);
+}
+.tara svg { display: block; width: 100%; height: 100%; filter: drop-shadow(2px 2px 0 rgba(31, 63, 255, 0.9)); }
+.tara .legs-1 { visibility: hidden; }
+.tara.walking { animation: tara-walk 16s linear 1; }
+.tara.walking .legs-0 { animation: legs-a 0.36s linear infinite; }
+.tara.walking .legs-1 { animation: legs-b 0.36s linear infinite; }
+@keyframes tara-walk { from { transform: translateX(-90px); } to { transform: translateX(calc(100vw + 20px)); } }
+@keyframes legs-a { 0%, 49% { visibility: visible; } 50%, 100% { visibility: hidden; } }
+@keyframes legs-b { 0%, 49% { visibility: hidden; } 50%, 100% { visibility: visible; } }
+.tara.sitting { left: auto; right: 12px; transform: none; }
+.tara-bubble {
+  position: absolute;
+  left: 56px; bottom: 34px;
+  padding: 3px 6px;
+  background: #fff;
+  color: #000;
+  font: 800 0.6rem/1 var(--mono);
+  letter-spacing: 0.06em;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.tara.barking .tara-bubble { opacity: 1; }
+.tara:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* lists never squash their rows: long movie lists scroll, showtimes simply grow */
+.tickets, .showtimes { display: flex; flex-direction: column; gap: 8px; }
+.tickets > li, .showtimes > li { flex-shrink: 0; }
+.tickets { max-height: 460px; }
+.showtimes { max-height: none; overflow: visible; }

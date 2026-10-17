@@ -19,6 +19,7 @@
     </div>
     <p class="tagline"><span class="play" aria-hidden="true">&#9654;</span> Pick a movie. Pick a day. Press play.</p>
     <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>NOW SHOWING &#10022; MOVIE NIGHT &#10022; STARRING TARA &#10022; POPCORN REQUIRED &#10022; NO SPOILERS &#10022; </span><span>NOW SHOWING &#10022; MOVIE NIGHT &#10022; STARRING TARA &#10022; POPCORN REQUIRED &#10022; NO SPOILERS &#10022; </span></div></div>
+    <p id="stats" class="stats" hidden></p>
     <div id="next-show" class="next-show" aria-live="polite" hidden></div>
   </header>
 
@@ -39,6 +40,7 @@
 
     <section id="dates" class="panel" data-label="/02 SHOWTIMES">
       <h2>Dates we're free</h2>
+      <div id="free-board" class="free-board" aria-label="Who is free in the next five weeks" hidden></div>
       <ul id="date-list" class="planner-list showtimes"><li class="muted">Loading...</li></ul>
       <a id="add-date" class="button" href="#" target="_blank" rel="noopener">+ Add a free date</a>
       <div class="remind">
