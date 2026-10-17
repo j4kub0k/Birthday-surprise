@@ -70,3 +70,12 @@ Who is free on a date can come from the form, from the sheet, or both:
 - Published sheets and form links are readable by anyone who has the link. Don't put anything private in them.
 - New answers show up on the site after about a minute (Google refreshes published sheets on its own).
 - To remove an entry, delete its row in the sheet.
+- Past dates are hidden on the site but stay in the sheet. To clear them automatically, see "Automatic cleanup of past dates".
+
+## Automatic cleanup of past dates (optional)
+The site already hides dates that have passed; this also deletes their rows so the free-dates tab never fills up. It only removes rows with a readable date before today. Weekday rows ("Friday"), notes, empty cells and the header row are kept, and the movies tab is never touched.
+1. In the sheet: **Extensions -> Apps Script**.
+2. Delete the sample code and paste in the whole of `cleanup-old-dates.gs` from this repo. Save.
+3. If your free-dates tab's address does not end in `gid=1440545244`, change `DATES_TAB_GID` at the top to the number after `gid=`. Change `DATE_COLUMN` if the date is not in column B.
+4. In the toolbar pick the function **installDailyCleanup** and press **Run**. Allow the permissions when Google asks (it is your own script, working on this sheet only; "Advanced -> Go to ... (unsafe)" is the usual wording for scripts you wrote yourself).
+5. Done: it cleans now, then every night around 3 am. To stop it, open **Triggers** (clock icon) and delete the trigger.
