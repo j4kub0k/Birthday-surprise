@@ -554,9 +554,27 @@
       if (watchedList) watchedList.innerHTML = '';
       entries.forEach((e) => {
         const li = document.createElement('li');
-        li.textContent = e.date
-          ? e.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-          : e.title;
+        if (e.date) {
+          // showtime: day number and month in the ticket stub, weekday + how soon it is in the row
+          li.classList.add('showtime');
+          const stub = document.createElement('span');
+          stub.className = 'stub';
+          const dnum = document.createElement('b');
+          dnum.textContent = e.date.getDate();
+          const mon = document.createElement('i');
+          mon.textContent = e.date.toLocaleDateString(undefined, { month: 'short' }).replace('.', '');
+          stub.append(dnum, mon);
+          li.appendChild(stub);
+          li.appendChild(document.createTextNode(e.date.toLocaleDateString(undefined, { weekday: 'long' }) +
+            (e.date.getFullYear() !== today.getFullYear() ? ' ' + e.date.getFullYear() : '')));
+          const days = Math.round((e.date - today) / 86400000);
+          const soon = document.createElement('span');
+          soon.className = 'soon' + (days <= 1 ? ' hot' : '');
+          soon.textContent = days === 0 ? 'TONIGHT' : days === 1 ? 'TOMORROW' : 'IN ' + days + ' DAYS';
+          li.appendChild(soon);
+        } else {
+          li.textContent = e.title;
+        }
         if (!e.watched && ((seen && !seen.includes(e.key)) || keptNew.includes(e.key))) {
           newKeys.push(e.key);
           const badge = document.createElement('span');

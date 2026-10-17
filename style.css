@@ -495,3 +495,151 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 /* Monthly reminder row under the planner */
 .remind { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
 .remind p { margin: 0; font: 400 0.75rem/1.5 var(--mono); letter-spacing: 0.06em; opacity: 0.9; }
+
+/* =====================================================================
+   Cinema pass: more movie, same cyber HUD (black / acid lime / electric blue)
+   ===================================================================== */
+[hidden] { display: none !important; }
+
+/* film grain + CRT scanlines over the whole page (purely decorative) */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.07;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* header: camera-viewfinder corners around the title, mono tagline, cinema ticker */
+.hero-title::before, .hero-title::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 0 solid var(--lime);
+  pointer-events: none;
+}
+.hero-title::before { top: 12px; left: -6px; border-width: 3px 0 0 3px; }
+.hero-title::after { bottom: 6px; right: 0; border-width: 0 3px 3px 0; }
+.tagline {
+  margin: 0;
+  font: 700 0.8rem/1.5 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.play { color: var(--lime); margin-right: 4px; }
+.ticker {
+  margin-top: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 3px solid var(--blue);
+  border-bottom: 3px solid var(--blue);
+  padding: 9px 0;
+}
+.ticker-track { display: inline-flex; animation: ticker 30s linear infinite; }
+.ticker-track span { font: 700 0.72rem/1 var(--mono); letter-spacing: 0.22em; color: var(--lime); }
+@keyframes ticker { to { transform: translateX(-50%); } }
+
+/* sections: stacked on phones, side by side on wide screens */
+#movies, #dates { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+#movies > ul, #dates > ul, .watched-block, .remind { width: 100%; }
+@media (min-width: 1000px) {
+  .hero, main { max-width: 1040px; }
+  main { grid-template-columns: 1fr 1fr; align-items: start; }
+  #dogs { grid-column: 1 / -1; }
+}
+/* sprocket holes along the bottom of each blue title bar */
+.panel::before {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0 7px, transparent 7px 15px) left bottom / 100% 5px no-repeat,
+    var(--blue);
+}
+.button-row { align-items: center; }
+
+/* movie tickets: notched edges, perforated stub with the number */
+.tickets li, .showtimes li {
+  min-height: 58px;
+  padding: 12px 16px 12px 72px;
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.06), transparent 40%), #141414;
+  border: 0;
+  border-radius: 6px;
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+.tickets li:hover, .showtimes li:hover { background: linear-gradient(90deg, rgba(198, 255, 0, 0.14), transparent 55%), #181818; }
+.tickets li::after, .showtimes li::after {
+  content: "";
+  position: absolute;
+  left: 58px; top: 8px; bottom: 8px;
+  border-left: 2px dashed rgba(198, 255, 0, 0.45);
+}
+.tickets li::before, .showtimes li::before {
+  content: "N\B0\A" counter(n, decimal-leading-zero);
+  white-space: pre;
+  left: 0; top: 50%;
+  width: 58px;
+  transform: translateY(-50%);
+  text-align: center;
+  font: 700 0.72rem/1.25 var(--mono);
+}
+.tickets li.done { opacity: 0.55; text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.5); }
+.tickets li.done::before { content: "\2713\A SEEN"; }
+.planner-list li.muted { -webkit-mask: none; mask: none; padding: 12px 14px; background: transparent; }
+.planner-list li.muted::after { content: none; }
+
+/* showtimes: big day number + month in the stub, weekday and a countdown in the row */
+.showtimes li.showtime::before { content: none; }
+.showtimes li.has-cal { border-radius: 6px; }
+.stub {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.stub b { font: 900 1.45rem/1 var(--display); color: #fff; text-shadow: 2px 2px 0 var(--blue); }
+.stub i { font: 700 0.6rem/1 var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); }
+.soon {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  border: 1px solid var(--lime);
+  color: var(--lime);
+  font: 700 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.soon.hot { background: var(--lime); color: #000; }
+
+/* the watched list reads like the end credits */
+.watched-block h3 { color: rgba(255, 255, 255, 0.7); }
+
+/* monthly reminder as a "coming soon" card */
+.remind {
+  margin-top: 6px;
+  padding: 14px;
+  border: 1px dashed rgba(198, 255, 0, 0.55);
+  border-top: 1px dashed rgba(198, 255, 0, 0.55);
+}
+.remind-label { font-weight: 700 !important; color: var(--lime); letter-spacing: 0.18em !important; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+@media (max-width: 420px) {
+  .tagline { font-size: 0.68rem; letter-spacing: 0.08em; }
+}
+@media (min-width: 1000px) {
+  .hero-title .glitter-wrap { max-width: 640px; }
+}
