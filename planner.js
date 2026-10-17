@@ -337,7 +337,7 @@
     const dt = new Date(y, m - 1, d);
     return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? dt : null;
   }
-  const SLASH = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/;
+  const SLASH = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4}|\d{2})\b/;
   // Slash dates are ambiguous (3/4 = 3 April or March 4). Look at all dates: a part above 12 settles it.
   function detectOrder(strings) {
     let dmy = false, mdy = false;
@@ -351,16 +351,41 @@
     if (mdy && !dmy) return 'mdy';
     return cfg.dateOrder === 'mdy' ? 'mdy' : 'dmy';
   }
+  const fullYear = (y) => (y < 100 ? 2000 + y : y);
+  // English and Czech month names (Czech without accents, any case ending): "October", "Oct", "rijna", "listopadu"
+  const MONTH_NAMES = [
+    ['jan', 'leden', 'ledna'], ['feb', 'unor', 'unora'], ['mar', 'brezen', 'brezna'], ['apr', 'duben', 'dubna'],
+    ['may', 'kveten', 'kvetna'], ['jun', 'cerven', 'cervna'], ['jul', 'cervenec', 'cervence'], ['aug', 'srpen', 'srpna'],
+    ['sep', 'zari'], ['oct', 'rijen', 'rijna'], ['nov', 'listopad', 'listopadu'], ['dec', 'prosinec', 'prosince'],
+  ];
+  function monthFromName(word) {
+    const w = word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.$/, '');
+    if (w.length < 3 || !/^[a-z]+$/.test(w)) return 0;
+    if (w.startsWith('cervenc')) return 7; // Czech July, checked before June ("cerven")
+    for (let i = 0; i < 12; i++) {
+      const [en, ...cz] = MONTH_NAMES[i];
+      if (w.startsWith(en) || cz.includes(w)) return i + 1;
+    }
+    return 0;
+  }
   function parseDate(str, order) {
-    const s = str.trim();
+    let s = str.trim();
+    // a leading weekday ("pá 24. 10. 2026", "Friday, October 24, 2026") is dropped
+    const first = s.split(/[\s,]+/)[0];
+    if (first && /^[^\d]+$/.test(first) && weekdayOf(first.replace(/[.,]$/, '')) >= 0) s = s.slice(first.length).replace(/^[\s,.]+/, '');
     let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s) || /^(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(s);
     if (m) return validDate(+m[1], +m[2], +m[3]);
-    m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})/.exec(s); // 14.11.2026 is always day first
-    if (m) return validDate(+m[3], +m[2], +m[1]);
+    m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4}|\d{2})\b/.exec(s); // 14.11.2026 is always day first
+    if (m) return validDate(fullYear(+m[3]), +m[2], +m[1]);
     m = SLASH.exec(s);
-    if (m) return order === 'mdy' ? validDate(+m[3], +m[1], +m[2]) : validDate(+m[3], +m[2], +m[1]);
+    if (m) return order === 'mdy' ? validDate(fullYear(+m[3]), +m[1], +m[2]) : validDate(fullYear(+m[3]), +m[2], +m[1]);
+    m = /^(\d{1,2})\.?\s+([^\d\s.,]+)\.?,?\s+(\d{4})\b/.exec(s); // 24 October 2026, 24. října 2026
+    if (m && monthFromName(m[2])) return validDate(+m[3], monthFromName(m[2]), +m[1]);
+    m = /^([^\d\s.,]+)\.?\s+(\d{1,2}),?\s+(\d{4})\b/.exec(s); // October 24, 2026
+    if (m && monthFromName(m[1])) return validDate(+m[3], monthFromName(m[1]), +m[2]);
     return null; // free text such as "Fri 14 Nov evening": kept in the list, never hidden
   }
+
   const isTrue = (v) => /^(true|yes|y|x|1|\u2713|\u2714|watched)$/i.test((v || '').trim());
 
   // ---- "Add to calendar": an .ics file (works in Google, Apple and Outlook calendars) with built-in alerts,
@@ -531,7 +556,11 @@
       items.forEach((li) => { li.classList.remove('picked', 'flash'); const t = li.querySelector('.pick-tag'); if (t) t.remove(); });
       const winner = Math.floor(Math.random() * items.length);
       const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const steps = still ? 0 : items.length * 2 + winner; // two full laps, then stop on the winner
+      // at least ~16 flashes, ending exactly on the winner; the whole spin always takes about 2.5 s
+      const n = items.length;
+      const steps = still ? 0 : winner + n * Math.max(1, Math.ceil((16 - winner) / n));
+      const weights = Array.from({ length: steps }, (_, k) => 1 + 6 * Math.pow(k / Math.max(1, steps), 3)); // slows down at the end
+      const total = weights.reduce((a, b) => a + b, 0) || 1;
       let i = 0;
       btn.disabled = true;
       const land = () => {
@@ -551,7 +580,7 @@
         items.forEach((li) => li.classList.remove('flash'));
         items[i % items.length].classList.add('flash');
         i++;
-        setTimeout(tick, 60 + i * i * 1.2); // slows down like a wheel
+        setTimeout(tick, 2500 * weights[i - 1] / total); // slows down like a wheel
       };
       tick();
     });

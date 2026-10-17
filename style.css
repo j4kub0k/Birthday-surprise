@@ -810,3 +810,6 @@ body::after {
 .locked-line b { color: #fff; font-family: var(--display); font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; }
 .locked .cal-row { margin-top: 0; }
 .next-show .lock-wrap { width: auto; margin-top: 0; }
+@media (max-width: 360px) {
+  .tagline { font-size: 0.6rem; letter-spacing: 0.04em; }
+}
