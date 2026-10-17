@@ -491,3 +491,7 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 }
 .chip:hover { background: var(--lime); color: #000; }
 .chip:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* Monthly reminder row under the planner */
+.remind { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.remind p { margin: 0; font: 400 0.75rem/1.5 var(--mono); letter-spacing: 0.06em; opacity: 0.9; }
