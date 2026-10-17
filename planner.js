@@ -908,7 +908,29 @@
       const wi = kind === 'movies' ? findCol(header, /watched|vid[eě]n|vid[eě]li/i, -1) : -1;
       const ri = kind === 'movies' ? findCol(header, /rating|hodnocen|stars|hv[eě]zd/i, -1) : -1;
       // dates from the form: a "Who" column says who is free, so dates you both picked can be matched
-      const whoI = kind === 'dates' && !gridMode ? findCol(header, /who|kdo|name|jm[eé]no/i, header.length > 2 ? 2 : -1) : -1;
+      // dates from the form: who is free comes from a "Who" question (a Checkboxes question gives "Jakub, Adela")
+      // and/or from checkbox columns named after each person (TRUE/FALSE), which can also be ticked later in the sheet
+      const formDates = kind === 'dates' && !gridMode;
+      const boolCol = (i) => {
+        let any = false;
+        for (const r of rows) {
+          const v = (r[i] || '').trim();
+          if (!v) continue;
+          if (!/^(true|false)$/i.test(v)) return false;
+          any = true;
+        }
+        return any;
+      };
+      const personCols = formDates ? header.map((h, i) => i).filter((i) => i >= 2 && header[i].trim() && boolCol(i)) : [];
+      let whoI = formDates ? findCol(header, /who|kto|kdo|name|meno|jm[eé]no/i, -1) : -1;
+      if (personCols.includes(whoI)) whoI = -1;
+      if (formDates && whoI < 0 && header.length > 2 && !personCols.includes(2) && !/note|pozn/i.test(header[2])) whoI = 2;
+      const splitNames = (cell) => String(cell || '').split(/\s*(?:,|;|\/|&|\+|\band\b|\ba\b)\s*/i).map((s) => s.trim()).filter(Boolean);
+      const namesIn = (r) => [
+        ...(whoI >= 0 ? splitNames(r[whoI]) : []),
+        ...personCols.filter((i) => isTrue(r[i])).map((i) => header[i].trim()),
+      ];
+      const skipCols = new Set([whoI, ...personCols]);
       if (watchedBlock) watchedBlock.hidden = wi < 0;
 
       const seen = readSeen(listId);
@@ -941,7 +963,7 @@
             date: kind === 'dates' ? parseDate(title, order) : null,
             watched: wi >= 0 && isTrue(r[wi]),
             rating: ri >= 0 ? parseRating(r[ri]) : null,
-            details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri).map((x) => x.trim()).filter(Boolean).join(' · '),
+            details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri && !skipCols.has(i + 2)).map((x) => x.trim()).filter(Boolean).join(' · '),
           };
           if (entry.date && entry.date < today) return; // outdated dates disappear
           entries.push(entry);
@@ -950,20 +972,26 @@
           // one showtime per day: entries for the same date are merged, and with two different names it's "both free"
           const groups = new Map();
           const textOnly = [];
+          personCols.forEach((i) => { const p = header[i].trim(); if (!people.some((x) => sameName(x, p))) people.push(p); });
           rows.slice().reverse().forEach((r) => { // oldest first, so people get stable colours
-            const who = whoI >= 0 ? (r[whoI] || '').trim() : '';
-            if (who && !people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
+            namesIn(r).forEach((who) => {
+              if (!people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
+            });
           });
+          const canon = (typed) => people.find((p) => sameName(p, typed));
           entries.forEach((e) => {
-            if (!e.date) { textOnly.push(e); return; }
+            const names = namesIn(e.r).map(canon).filter(Boolean);
+            if (!e.date) {
+              e.details = [Array.from(new Set(names)).join(' + '), e.details].filter(Boolean).join(' · ');
+              textOnly.push(e);
+              return;
+            }
             const k = ymd(e.date);
             let g = groups.get(k);
             if (!g) { g = { r: e.r, title: e.title, date: e.date, keys: [], names: [], notes: [] }; groups.set(k, g); }
             g.keys.push(e.key);
-            const typed = whoI >= 0 ? (e.r[whoI] || '').trim() : '';
-            const who = typed ? people.find((p) => sameName(p, typed)) : '';
-            if (who && !g.names.includes(who)) g.names.push(who);
-            e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (i + 2 !== whoI && v && !g.notes.includes(v)) g.notes.push(v); });
+            names.forEach((n) => { if (!g.names.includes(n)) g.names.push(n); });
+            e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (!skipCols.has(i + 2) && v && !g.notes.includes(v)) g.notes.push(v); });
           });
           groups.forEach((g) => g.names.sort((a, b) => people.indexOf(a) - people.indexOf(b)));
           dated = Array.from(groups.values()).map((g) => Object.assign(g, {

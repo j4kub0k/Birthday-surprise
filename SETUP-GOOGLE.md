@@ -54,9 +54,11 @@ Instead of the free-dates form, keep one tab where each of you ticks the days yo
 When `availabilityCsvUrl` is set the site uses this tab and ignores the free-dates form. Leave it empty to keep using the form.
 
 ## Finding when you're both free (free-dates form)
-- Give the **Free dates** form a second question **Who?** (Multiple choice with your two names is best, so the spelling always matches). The site then merges the same date from both of you into one showtime marked **BOTH FREE**, sorts those first, lights them up in the **Who's free** board (next five weeks, a coloured dot per person), and the header banner shows the next movie night.
-- If only one of you has picked a date, the banner shows it with "only <name> so far" and an "I'm free too" button.
-- Without a Who question everything still works, it just can't tell who is free.
+Who is free on a date can come from the form, from the sheet, or both:
+- **In the form:** add a question **Who is free?** of type **Checkboxes** with the options **Jakub** and **Adela** (exactly as in the sheet). When adding a date you tick yourself, or both of you. The sheet gets a column like "Jakub, Adela".
+- **In the sheet:** checkbox columns named after each person (**Jakub**, **Adela**) in the responses tab. Tick them later, e.g. when Adela is also free on a date Jakub added. Select the columns from row 2 down and **Insert -> Checkbox** so new rows get checkboxes too.
+- The same date from both of you (in one row or in two rows) becomes one showtime marked **BOTH FREE**; those sort first, light up lime in the **Who's free** board, and the header banner shows the next movie night with **Lock it in**.
+- If only one of you is free on a date, the banner shows "only <name> so far" with an "I'm free too" button.
 
 ## Ratings and stats
 - In the movies tab, add a column named **Rating** next to Watched and type 1-5 (8/10 and stars like ★★★★ work too). Watched movies show the stars, and the header shows "N watched together · N waiting · N both-free dates · avg ★".
