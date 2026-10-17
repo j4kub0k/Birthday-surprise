@@ -1143,14 +1143,14 @@
 // Tapping her opens the dog corner. With reduced motion she just sits in the corner.
 (function pixelTara() {
   const B = '#c8692b', D = '#7a3a12', K = '#111', L = '#c6ff00';
-  // 24 x 10 pixels, facing right: long body, tail up, floppy dark ear, lime collar. Two leg frames for the trot.
+  // 24 x 10 pixels, facing right: long body, tail up, floppy dark ear. Two leg frames for the trot.
   const BODY = [
     '..................BBB...',
     '.................BBBBB..',
     '.................BKBBBBB',
     '..D.............DDBBBBBK',
     '...D............DDBBB...',
-    '....BBBBBBBBBBBBLLBB....',
+    '....BBBBBBBBBBBBBBBB....',
     '....BBBBBBBBBBBBBBB.....',
     '.....BBBBBBBBBBBBB......',
   ];
@@ -1199,7 +1199,7 @@
   });
 
   // ---- Tara the avatar: her face pops up in the corner with a speech bubble when you do something ----
-  // 16 x 14 pixels, front view: floppy dark ears, light muzzle, black nose, pink tongue, lime collar.
+  // 16 x 13 pixels, front view: floppy dark ears, light muzzle, black nose, pink tongue.
   const FACE = [
     '....BBBBBBBB....',
     '...BBBBBBBBBB...',
@@ -1212,8 +1212,8 @@
     '.DD.BSSKKSSB.DD.',
     '.DD.BSSSSSSB.DD.',
     '..D..SSPPSS..D..',
-    '.....LLPPLL.....',
-    '....LLLLLLLL....',
+    '.....BSPPSB.....',
+    '....BBBBBBBB....',
   ];
   const face = document.createElementNS(NS, 'svg');
   face.setAttribute('viewBox', '0 0 16 13');
