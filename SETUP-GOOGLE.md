@@ -4,7 +4,7 @@ No server needed: two Google Forms collect entries, one Google Sheet stores them
 
 ## 1. Movies form
 1. Go to forms.google.com and create a form named "Movies".
-2. Questions, in this order: **Movie** (short answer, required), **Who suggested it?** (short answer), **Vibe** (short answer or dropdown, optional).
+2. Questions, in this order: **Movies** (**Paragraph** question, required; in its description write "one movie per line", so a whole list can be pasted at once), **Who suggested it?** (short answer), **Vibe** (short answer or dropdown, optional).
 3. Responses tab -> **Link to Sheets** -> create a new spreadsheet, e.g. "Movie night".
 4. Send -> link icon -> copy the link into `moviesFormUrl` in `config.js`.
 
@@ -18,6 +18,11 @@ For each of the two response tabs in the sheet:
 1. File -> Share -> **Publish to web**.
 2. Choose that tab (not "Entire document") and **Comma-separated values (.csv)**.
 3. Publish, copy the link into `moviesCsvUrl` / `datesCsvUrl`.
+
+## Lists of movies
+- A single submission can hold many movies, one per line. The site shows each line as its own item. Bullets and numbers at the start of a line ("- Heat", "2. Coco") are removed. Titles with commas are fine.
+- If you already have a short-answer question, change it in the form: open the question, switch the type from **Short answer** to **Paragraph**. Old answers keep working.
+- Watched: the **Watched** checkbox marks the whole submission. To mark one movie of a list, type a check mark in front of it in the sheet cell (for example `✓ Alien`).
 
 ## 4. Watched movies (optional)
 1. Open the response tab for the **Movies** form in the Google Sheet.
