@@ -116,12 +116,14 @@
   }
 
   // Which photos exist? Try dog1.jpg ... dog12.jpg once and keep the ones that load.
-  const ready = Promise.all(Array.from({ length: MAX }, (_, i) => new Promise((resolve) => {
+  // Done the first time the corner is opened, so a visit that never opens it downloads no photos.
+  let ready = null;
+  const findPhotos = () => ready || (ready = Promise.all(Array.from({ length: MAX }, (_, i) => new Promise((resolve) => {
     const probe = new Image();
     probe.onload = () => resolve(i + 1);
     probe.onerror = () => resolve(0);
     probe.src = 'images/dog' + (i + 1) + '.jpg';
-  }))).then((found) => found.filter(Boolean));
+  }))).then((found) => found.filter(Boolean)));
 
   // Lay everything out again at random; runs when the corner is opened.
   function layout(available) {
@@ -221,8 +223,12 @@
     gallery.appendChild(foot);
   }
 
-  ready.then(layout);
-  if (details) details.addEventListener('toggle', () => { if (details.open) ready.then(layout); });
+  if (details) {
+    details.addEventListener('toggle', () => { if (details.open) findPhotos().then(layout); });
+    if (details.open) findPhotos().then(layout);
+  } else {
+    findPhotos().then(layout);
+  }
 })();
 
 // Give every heading its own random sticker look: fill/ink/outline colours, hard shadow and a slight tilt.
@@ -504,6 +510,78 @@
       '&details=' + encodeURIComponent(info.description);
   }
 
+  // "TONIGHT" / "TOMORROW" / "IN 5 DAYS" tag for a date
+  function countdown(date, today) {
+    const days = Math.round((date - today) / 86400000);
+    const soon = document.createElement('span');
+    soon.className = 'soon' + (days <= 1 ? ' hot' : '');
+    soon.textContent = days === 0 ? 'TONIGHT' : days === 1 ? 'TOMORROW' : 'IN ' + days + ' DAYS';
+    return soon;
+  }
+  const rowDetails = (r) => r.slice(2).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
+
+  // ---- "Next showing" banner in the header: the soonest free date, or a nudge to add one ----
+  function renderNextShow(next, today) {
+    const box = document.getElementById('next-show');
+    if (!box) return;
+    box.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'ns-label';
+    box.appendChild(label);
+    if (next) {
+      label.textContent = 'Next showing';
+      const when = document.createElement('span');
+      when.className = 'ns-when';
+      when.textContent = next.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+      box.append(when, countdown(next.date, today), calendarButtons(next.date, rowDetails(next.r)));
+    } else {
+      label.textContent = 'No showtime yet';
+      const add = document.createElement('a');
+      add.className = 'chip';
+      add.textContent = '+ Add a free date';
+      add.href = cfg.datesFormUrl || '#dates';
+      if (cfg.datesFormUrl) { add.target = '_blank'; add.rel = 'noopener'; }
+      box.appendChild(add);
+    }
+    box.hidden = false;
+  }
+
+  // ---- "Pick for me": spins through the movie tickets and lands on a random one ----
+  function wirePicker() {
+    const btn = document.getElementById('pick-movie');
+    const list = document.getElementById('movie-list');
+    if (!btn || !list) return;
+    btn.addEventListener('click', () => {
+      const items = Array.from(list.querySelectorAll('li:not(.muted)'));
+      if (items.length < 2) return;
+      items.forEach((li) => { li.classList.remove('picked', 'flash'); const t = li.querySelector('.pick-tag'); if (t) t.remove(); });
+      const winner = Math.floor(Math.random() * items.length);
+      const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const steps = still ? 0 : items.length * 2 + winner; // two full laps, then stop on the winner
+      let i = 0;
+      btn.disabled = true;
+      const land = () => {
+        items.forEach((li) => li.classList.remove('flash'));
+        const li = items[winner];
+        li.classList.add('picked');
+        const tag = document.createElement('span');
+        tag.className = 'pick-tag';
+        tag.textContent = "TONIGHT'S PICK";
+        li.insertBefore(tag, li.querySelector('small'));
+        li.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
+        btn.disabled = false;
+      };
+      const tick = () => {
+        if (i >= steps) { land(); return; }
+        items.forEach((li) => li.classList.remove('flash'));
+        items[i % items.length].classList.add('flash');
+        i++;
+        setTimeout(tick, 60 + i * i * 1.2); // slows down like a wheel
+      };
+      tick();
+    });
+  }
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
@@ -523,6 +601,7 @@
       if (!rows.length) {
         setMessage(list, emptyText);
         if (watchedList && wi >= 0) setMessage(watchedList, 'Nothing watched yet.');
+        if (kind === 'dates') { const t = new Date(); t.setHours(0, 0, 0, 0); renderNextShow(null, t); }
         return;
       }
 
@@ -567,11 +646,7 @@
           li.appendChild(stub);
           li.appendChild(document.createTextNode(e.date.toLocaleDateString(undefined, { weekday: 'long' }) +
             (e.date.getFullYear() !== today.getFullYear() ? ' ' + e.date.getFullYear() : '')));
-          const days = Math.round((e.date - today) / 86400000);
-          const soon = document.createElement('span');
-          soon.className = 'soon' + (days <= 1 ? ' hot' : '');
-          soon.textContent = days === 0 ? 'TONIGHT' : days === 1 ? 'TOMORROW' : 'IN ' + days + ' DAYS';
-          li.appendChild(soon);
+          li.appendChild(countdown(e.date, today));
         } else {
           li.textContent = e.title;
         }
@@ -593,6 +668,11 @@
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
       if (!list.children.length) setMessage(list, kind === 'dates' ? 'No upcoming dates. Add one!' : emptyText);
+      if (kind === 'dates') renderNextShow(entries.find((e) => e.date) || null, today);
+      if (kind === 'movies') {
+        const pick = document.getElementById('pick-movie');
+        if (pick) pick.hidden = list.querySelectorAll('li:not(.muted)').length < 2;
+      }
       if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
@@ -604,6 +684,7 @@
   const sheetLink = document.getElementById('open-sheet');
   if (cfg.sheetUrl) { sheetLink.href = cfg.sheetUrl; sheetLink.hidden = false; }
   wireReminder();
+  wirePicker();
   setButton('add-movie', cfg.moviesFormUrl);
   setButton('add-date', cfg.datesFormUrl);
   fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');

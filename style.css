@@ -643,3 +643,41 @@ body::after {
 @media (min-width: 1000px) {
   .hero-title .glitter-wrap { max-width: 640px; }
 }
+
+/* "Next showing" banner under the ticker */
+.next-show {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--lime);
+  background: rgba(198, 255, 0, 0.06);
+  box-shadow: 4px 4px 0 var(--blue);
+}
+.ns-label { font: 700 0.68rem/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--lime); }
+.ns-label::before { content: "\25CF  "; animation: rec 1.6s steps(1, end) infinite; }
+.ns-when { font: 900 1.05rem/1.2 var(--display); text-transform: uppercase; letter-spacing: 0.02em; }
+.next-show .soon { margin-left: 0; }
+.next-show .cal-row { margin-top: 0; }
+
+/* "Pick for me" spin */
+.tickets li.flash { background: linear-gradient(90deg, rgba(198, 255, 0, 0.35), rgba(198, 255, 0, 0.08)), #141414; }
+.tickets li.picked {
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.3), rgba(31, 63, 255, 0.25)), #141414;
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}
+.pick-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  background: var(--blue);
+  color: #fff;
+  font: 700 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.chip:disabled { opacity: 0.6; cursor: wait; }
+@media (prefers-reduced-motion: reduce) { .ns-label::before { animation: none; } }
