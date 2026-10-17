@@ -224,7 +224,11 @@
   }
 
   if (details) {
-    details.addEventListener('toggle', () => { if (details.open) findPhotos().then(layout); });
+    details.addEventListener('toggle', () => {
+      if (!details.open) return;
+      findPhotos().then(layout);
+      if (window.taraSay) window.taraSay("That's me! \uD83D\uDC3E");
+    });
     if (details.open) findPhotos().then(layout);
   } else {
     findPhotos().then(layout);
@@ -276,6 +280,7 @@
 // Movie Night Planner: read the published Google Sheet tabs (CSV) and set up the "add" buttons.
 (function movieNightPlanner() {
   const cfg = window.PLANNER || {};
+  const say = (text) => { if (window.taraSay) window.taraSay(text); }; // Tara's speech bubble (see the end of this file)
 
   // Small CSV parser that handles quoted fields, commas and newlines inside quotes.
   function parseCsv(text) {
@@ -445,6 +450,7 @@
     ics.className = 'chip';
     ics.textContent = 'Add to calendar';
     ics.addEventListener('click', () => {
+      say("Saved! I'll wag my tail on the day \uD83D\uDC3E");
       const blob = new Blob([buildIcs(date, info)], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -465,6 +471,7 @@
       '&text=' + encodeURIComponent(info.title) +
       '&dates=' + ymd(date) + '/' + ymd(next) +
       '&details=' + encodeURIComponent(info.description);
+    g.addEventListener('click', () => say("Saved! I'll wag my tail on the day \uD83D\uDC3E"));
     row.append(ics, g);
     return row;
   }
@@ -518,6 +525,7 @@
     const end = new Date(start.getTime() + 15 * 60 * 1000);
     const info = reminderInfo();
     icsBtn.addEventListener('click', () => {
+      say("I'll remind you once a month. Woof! \uD83D\uDC3E");
       const blob = new Blob([buildReminderIcs(start, info)], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -533,6 +541,7 @@
       '&dates=' + floatingStamp(start) + '/' + floatingStamp(end) +
       '&recur=' + encodeURIComponent('RRULE:FREQ=MONTHLY;BYDAY=1SA') +
       '&details=' + encodeURIComponent(info.description);
+    gLink.addEventListener('click', () => say("I'll remind you once a month. Woof! \uD83D\uDC3E"));
   }
 
   // "TONIGHT" / "TOMORROW" / "IN 5 DAYS" tag for a date
@@ -573,6 +582,7 @@
         tag.textContent = "TONIGHT'S PICK";
         li.insertBefore(tag, li.querySelector('small'));
         li.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
+        say('Ooh, ' + li.firstChild.textContent.trim() + '! Good pick \uD83C\uDF7F');
         btn.disabled = false;
       };
       const tick = () => {
@@ -728,6 +738,7 @@
       result.append(line, calendarButtons(date, details, movie ? 'Movie night: ' + movie + ' 🎬' : ''), again);
       result.hidden = false;
       btn.hidden = true;
+      say(movie ? movie + " it is! Don't forget snacks \uD83C\uDF7F" : 'Movie night locked in! \uD83C\uDFAC');
     };
     btn.addEventListener('click', roll);
     wrap.append(btn, result);
@@ -846,6 +857,8 @@
       tag.className = 'both-tag';
       tag.textContent = 'BOTH FREE';
       box.append(when(both.date), countdown(both.date, today), tag, lockInButton(both.date, both.details));
+      const days = Math.round((both.date - today) / 86400000);
+      if (days <= 1) setTimeout(() => say(days === 0 ? 'Movie night is TONIGHT! \uD83C\uDF7F' : 'Movie night is tomorrow! \uD83C\uDF7F'), 1500);
     } else if (suggestion) {
       label.textContent = 'Suggested';
       const why = document.createElement('span');
@@ -1109,6 +1122,9 @@
   wireReminder();
   wirePicker();
   setButton('add-movie', cfg.moviesFormUrl);
+  document.getElementById('add-movie').addEventListener('click', () => say('Add a good one! \uD83C\uDFAC'));
+  document.getElementById('add-date').addEventListener('click', () => say("Add your day, I'll sniff out when you're both free \uD83D\uDC3E"));
+  sheetLink.addEventListener('click', () => say('Tick it and give it some stars \u2B50'));
   if (cfg.availabilityCsvUrl) {
     // free days are ticked in the sheet's "Free days" tab, not added with the form
     const addDate = document.getElementById('add-date');
@@ -1142,7 +1158,7 @@
     ['.....BB.......BB........', '.....D........D.........'],
     ['......BB.......BB.......', '.......D........D.......'],
   ];
-  const colors = { B, D, K, L };
+  const colors = { B, D, K, L, S: '#e3925a', P: '#ff6f9d', W: '#ffffff' };
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 10');
@@ -1175,11 +1191,58 @@
   tara.addEventListener('click', () => {
     tara.classList.add('barking');
     setTimeout(() => tara.classList.remove('barking'), 1200);
+    if (window.taraSay) window.taraSay("That's me! \uD83D\uDC3E");
     const dogs = document.getElementById('dogs');
     const det = dogs && dogs.querySelector('details');
     if (det && !det.open) det.open = true;
     if (dogs) dogs.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+
+  // ---- Tara the avatar: her face pops up in the corner with a speech bubble when you do something ----
+  // 16 x 14 pixels, front view: floppy dark ears, light muzzle, black nose, pink tongue, lime collar.
+  const FACE = [
+    '....BBBBBBBB....',
+    '...BBBBBBBBBB...',
+    '..DBBBBBBBBBBD..',
+    '.DDBBKWBBKWBBDD.',
+    '.DDBBKKBBKKBBDD.',
+    '.DDBBBBBBBBBBDD.',
+    '.DDBBBSSSSBBBDD.',
+    '.DDBBSSKKSSBBDD.',
+    '.DD.BSSKKSSB.DD.',
+    '.DD.BSSSSSSB.DD.',
+    '..D..SSPPSS..D..',
+    '.....LLPPLL.....',
+    '....LLLLLLLL....',
+  ];
+  const face = document.createElementNS(NS, 'svg');
+  face.setAttribute('viewBox', '0 0 16 13');
+  face.setAttribute('shape-rendering', 'crispEdges');
+  face.setAttribute('aria-hidden', 'true');
+  paint(FACE, 0, face);
+  const pop = document.createElement('div');
+  pop.className = 'tara-pop';
+  pop.setAttribute('role', 'status');
+  pop.setAttribute('aria-live', 'polite');
+  const msg = document.createElement('p');
+  msg.className = 'tara-msg';
+  const avatar = document.createElement('button');
+  avatar.type = 'button';
+  avatar.className = 'tara-face';
+  avatar.setAttribute('aria-label', 'Tara');
+  avatar.appendChild(face);
+  pop.append(msg, avatar);
+  document.body.appendChild(pop);
+  let hideTimer = null;
+  window.taraSay = (text) => {
+    msg.textContent = text;
+    pop.classList.remove('show');
+    void pop.offsetWidth; // replay the pop-in for a new message
+    pop.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => pop.classList.remove('show'), 4000);
+  };
+  avatar.addEventListener('click', () => window.taraSay('Woof! \uD83D\uDC3E'));
 
   const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (still) { tara.classList.add('sitting'); return; }
