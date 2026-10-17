@@ -1171,7 +1171,18 @@
     r.setAttribute('fill', colors[c]);
     parent.appendChild(r);
   }));
-  paint(BODY, 0, svg);
+  // split the sprite into parts that can move on their own
+  const TAIL_UP = [[2, 3], [3, 4]];
+  const TAIL_DOWN = [[1, 5], [2, 5], [3, 5]];
+  const isTail = (x, y) => TAIL_UP.some(([tx, ty]) => tx === x && ty === y);
+  const part = (cls) => { const g = document.createElementNS(NS, 'g'); g.setAttribute('class', cls); svg.appendChild(g); return g; };
+  const bodyG = part('body'), headG = part('head'), tailUpG = part('tail-up'), tailDownG = part('tail-down');
+  BODY.forEach((row, y) => [...row].forEach((c, x) => {
+    if (!colors[c]) return;
+    const target = isTail(x, y) ? tailUpG : (x >= 16 && y <= 4 ? headG : bodyG);
+    paint([' '.repeat(x) + c], y, target);
+  }));
+  TAIL_DOWN.forEach(([x, y]) => paint([' '.repeat(x) + 'D'], y, tailDownG));
   LEGS.forEach((frame, i) => {
     const g = document.createElementNS(NS, 'g');
     g.setAttribute('class', 'legs legs-' + i);
@@ -1189,8 +1200,10 @@
   document.body.appendChild(tara);
 
   tara.addEventListener('click', () => {
+    bubble.textContent = 'woof!';
     tara.classList.add('barking');
     setTimeout(() => tara.classList.remove('barking'), 1200);
+    if (window.taraInterrupt) window.taraInterrupt();
     if (window.taraSay) window.taraSay("That's me! \uD83D\uDC3E");
     const dogs = document.getElementById('dogs');
     const det = dogs && dogs.querySelector('details');
@@ -1246,15 +1259,128 @@
 
   const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (still) { tara.classList.add('sitting'); return; }
-  const walk = () => {
-    tara.classList.remove('walking');
-    void tara.offsetWidth; // restart the animation
-    tara.classList.add('walking');
+
+  // ---- walking: each stroll is a little plan of moves and stops, played frame by frame ----
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const OFF = 100;              // px outside the screen where she starts and ends
+  const SPEED = 70, ZOOM = 230; // px per second: trot and zoomies
+  let x = -OFF, dir = 1, plan = [], cur = null, last = 0, phase = 0, raf = 0, nextTimer = 0, active = false;
+
+  const setPose = (classes) => {
+    tara.classList.remove('trot', 'running', 'sniffing', 'wagging');
+    classes.split(' ').filter(Boolean).forEach((c) => tara.classList.add(c));
   };
-  tara.addEventListener('animationend', (e) => {
-    if (e.animationName !== 'tara-walk') return;
-    tara.classList.remove('walking');
-    setTimeout(walk, 25000 + Math.random() * 35000); // next stroll in 25-60 s
-  });
-  setTimeout(walk, 3500);
+  const turnTo = (d) => { dir = d; tara.classList.toggle('left', d < 0); };
+  const heart = () => {
+    bubble.textContent = '\u2665';
+    tara.classList.add('barking');
+    setTimeout(() => { tara.classList.remove('barking'); bubble.textContent = 'woof!'; }, 1100);
+  };
+
+  function makePlan() {
+    const w = window.innerWidth;
+    const d = Math.random() < 0.5 ? 1 : -1;
+    const startX = d > 0 ? -OFF : w + 20;
+    const exitX = d > 0 ? w + 20 : -OFF;
+    const steps = [];
+    if (Math.random() < 0.18) {
+      // zoomies: one fast, hoppy dash across
+      steps.push({ type: 'move', to: exitX, speed: ZOOM, hop: true });
+      return { d, startX, steps };
+    }
+    // 0-3 stops at random spots along the way
+    const stops = Math.floor(rand(0, 4));
+    const spots = Array.from({ length: stops }, () => rand(0.12, 0.88)).sort((p, q) => p - q);
+    let turned = false;
+    spots.forEach((f, i) => {
+      const at = d > 0 ? f * w : (1 - f) * w;
+      steps.push({ type: 'move', to: at - 42, speed: rand(55, 90) });
+      const act = ['sniff', 'wag', 'look', 'sniff'][Math.floor(rand(0, 4))];
+      steps.push({ type: 'act', act, dur: act === 'look' ? 1.4 : rand(1.2, 2.4) });
+      if (!turned && i === stops - 1 && Math.random() < 0.25) {
+        // changes her mind and trots back the way she came
+        turned = true;
+        steps.push({ type: 'move', to: startX, speed: rand(60, 95) });
+      }
+    });
+    if (!turned) steps.push({ type: 'move', to: exitX, speed: rand(60, 90) });
+    return { d, startX, steps };
+  }
+
+  function begin(seg) {
+    seg.left = seg.dur || 0;
+    if (seg.type === 'move') {
+      turnTo(seg.to >= x ? 1 : -1);
+      setPose(seg.hop ? 'trot running' : 'trot');
+    } else if (seg.act === 'sniff') {
+      setPose('sniffing');
+    } else if (seg.act === 'wag') {
+      setPose('wagging');
+      heart();
+    } else {
+      setPose(''); // look: stand still, glance back, then look ahead again
+    }
+  }
+
+  function frame(t) {
+    const dt = Math.min(0.05, last ? (t - last) / 1000 : 0);
+    last = t;
+    if (!cur) {
+      cur = plan.shift();
+      if (!cur) { finish(); return; }
+      begin(cur);
+    }
+    let y = 0;
+    if (cur.type === 'move') {
+      const dist = cur.to - x;
+      const stepPx = cur.speed * dt * Math.sign(dist);
+      if (Math.abs(stepPx) >= Math.abs(dist)) { x = cur.to; cur = null; } else x += stepPx;
+      phase += dt;
+      y = cur && cur.hop ? -Math.abs(Math.sin(phase * 13)) * 7 : -Math.abs(Math.sin(phase * 11)) * 1.5; // bounce in her step
+    } else {
+      cur.left -= dt;
+      if (cur.act === 'look') {
+        const half = cur.dur / 2;
+        if (!cur.turned && cur.left < half + 0.3) { cur.turned = true; turnTo(-dir); }
+        if (!cur.back && cur.left < 0.3) { cur.back = true; turnTo(-dir); }
+      }
+      if (cur.left <= 0) cur = null;
+    }
+    tara.style.transform = 'translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px)';
+    raf = requestAnimationFrame(frame);
+  }
+
+  function finish() {
+    active = false;
+    setPose('');
+    cancelAnimationFrame(raf);
+    clearTimeout(nextTimer);
+    nextTimer = setTimeout(walk, rand(10000, 25000)); // next stroll in 10-25 s
+  }
+
+  function walk(custom) {
+    if (active && !custom) return;
+    cancelAnimationFrame(raf);
+    clearTimeout(nextTimer);
+    const p = custom || makePlan();
+    plan = p.steps.map((s) => Object.assign({}, s));
+    x = p.startX;
+    turnTo(p.d);
+    cur = null;
+    last = 0;
+    phase = 0;
+    active = true;
+    raf = requestAnimationFrame(frame);
+  }
+
+  // tapped while walking: stop, wag, then carry on with the walk
+  window.taraInterrupt = () => {
+    if (!active) return;
+    if (cur) plan.unshift(cur);
+    plan.unshift({ type: 'act', act: 'wag', dur: 1.6 });
+    cur = null;
+  };
+  window.taraWalk = walk; // handy for testing: taraWalk() starts a stroll right away
+
+  nextTimer = setTimeout(walk, 3000);
 })();
