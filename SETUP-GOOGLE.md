@@ -29,7 +29,7 @@ For each of the two response tabs in the sheet:
 
 ## Dates
 - Dates that have passed disappear from the site on their own (today's date stays until the day is over). The rows stay in the sheet.
-- Upcoming dates are sorted soonest first.
+- Upcoming dates are sorted soonest first, and each has **Add to calendar** (downloads a calendar file with alerts at 18:00 the evening before and 09:00 on the day) and **Google** (opens Google Calendar with the event filled in) buttons. The event title can be changed with `eventTitle` in `config.js`.
 - Entries typed as free text (for example "Fri 14 Nov evening", or older answers from before the question became a Date) cannot be checked, so they always stay visible. Delete those rows in the sheet when they are done.
 - Slash dates such as 3/4/2026 are ambiguous. The site works out day-first or month-first from your other dates; if it can't tell, it uses `dateOrder` in `config.js` ('dmy' or 'mdy').
 

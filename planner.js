@@ -357,6 +357,87 @@
   }
   const isTrue = (v) => /^(true|yes|y|x|1|\u2713|\u2714|watched)$/i.test((v || '').trim());
 
+  // ---- "Add to calendar": an .ics file (works in Google, Apple and Outlook calendars) with built-in alerts,
+  //      plus a Google Calendar link. All-day event on the chosen date.
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate());
+  const icsEscape = (s) => String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  // calendar files must wrap long lines (continuation lines start with a space); never split an emoji in half
+  function foldLine(line) {
+    const out = [];
+    let rest = line;
+    while (rest.length > 60) {
+      let cut = 60;
+      const code = rest.charCodeAt(cut - 1);
+      if (code >= 0xD800 && code <= 0xDBFF) cut--; // do not cut between the two halves of an emoji
+      out.push(rest.slice(0, cut));
+      rest = ' ' + rest.slice(cut);
+    }
+    out.push(rest);
+    return out.join('\r\n');
+  }
+  function eventInfo(date, note) {
+    const title = cfg.eventTitle || 'Movie night \uD83C\uDFAC';
+    const pageUrl = /^https?:/.test(location.href) ? location.origin + location.pathname : '';
+    const lines = ['Pick a movie from the list and press play.'];
+    if (note) lines.push(note);
+    if (pageUrl) lines.push(pageUrl);
+    return { title, description: lines.join('\n'), pageUrl };
+  }
+  function buildIcs(date, info) {
+    const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    const now = new Date();
+    const stamp = now.getUTCFullYear() + pad2(now.getUTCMonth() + 1) + pad2(now.getUTCDate()) + 'T' +
+      pad2(now.getUTCHours()) + pad2(now.getUTCMinutes()) + pad2(now.getUTCSeconds()) + 'Z';
+    const alarm = (trigger, text) => ['BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEscape(text), 'TRIGGER:' + trigger, 'END:VALARM'];
+    return [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Movie Night Planner//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:movie-night-' + ymd(date) + '@birthday-surprise',
+      'DTSTAMP:' + stamp,
+      'DTSTART;VALUE=DATE:' + ymd(date),
+      'DTEND;VALUE=DATE:' + ymd(next),
+      'SUMMARY:' + icsEscape(info.title),
+      'DESCRIPTION:' + icsEscape(info.description),
+      ...(info.pageUrl ? ['URL:' + info.pageUrl] : []),
+      ...alarm('-PT6H', 'Movie night is tomorrow'),  // 18:00 the evening before
+      ...alarm('PT9H', 'Movie night is today'),      // 09:00 on the day
+      'END:VEVENT', 'END:VCALENDAR',
+    ].map(foldLine).join('\r\n') + '\r\n';
+  }
+  function calendarButtons(date, note) {
+    const info = eventInfo(date, note);
+    const row = document.createElement('span');
+    row.className = 'cal-row';
+    const ics = document.createElement('button');
+    ics.type = 'button';
+    ics.className = 'chip';
+    ics.textContent = 'Add to calendar';
+    ics.addEventListener('click', () => {
+      const blob = new Blob([buildIcs(date, info)], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'movie-night-' + ymd(date) + '.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    });
+    const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    const g = document.createElement('a');
+    g.className = 'chip';
+    g.target = '_blank';
+    g.rel = 'noopener';
+    g.textContent = 'Google';
+    g.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+      '&text=' + encodeURIComponent(info.title) +
+      '&dates=' + ymd(date) + '/' + ymd(next) +
+      '&details=' + encodeURIComponent(info.description);
+    row.append(ics, g);
+    return row;
+  }
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
@@ -423,6 +504,7 @@
           small.textContent = details;
           li.appendChild(small);
         }
+        if (e.date) { li.classList.add('has-cal'); li.appendChild(calendarButtons(e.date, details)); }
         if (e.watched) { li.className = 'done'; watchedList.appendChild(li); } else list.appendChild(li);
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }

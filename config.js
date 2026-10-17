@@ -9,6 +9,8 @@ window.PLANNER = {
   // The Google Sheet's own link (open it in the browser and copy the address bar, ends in /edit...).
   // Shows a "Tick watched in the sheet" button under the movie list. Leave empty to hide the button.
   sheetUrl: 'https://docs.google.com/spreadsheets/d/1-PAB5xC_cbaK7Uq_JHguQt2GyoEufsphERUM84tVbzQ/edit?gid=232171872#gid=232171872',
+  // Title of the calendar event created by the "Add to calendar" buttons on upcoming dates.
+  eventTitle: 'Movie night \uD83C\uDFAC',
   // Only used when a slash date like 3/4/2026 is ambiguous: 'dmy' = day first, 'mdy' = month first.
   dateOrder: 'dmy',
 };
