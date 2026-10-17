@@ -24,7 +24,16 @@ For each of the two response tabs in the sheet:
 - If you already have a short-answer question, change it in the form: open the question, switch the type from **Short answer** to **Paragraph**. Old answers keep working.
 - Watched: the **Watched** checkbox marks the whole submission. To mark one movie of a list, type a check mark in front of it in the sheet cell (for example `✓ Alien`).
 
-## 4. Watched movies (optional)
+## "I watched it" form (works for lists of movies)
+A checkbox in the sheet marks a whole submission, so it cannot mark one movie out of a pasted list. This small form can:
+1. forms.google.com -> blank form named "Watched". One **Paragraph** question, for example "Which movies did you watch? (one per line)".
+2. Responses -> **Link to Sheets** -> **Select existing spreadsheet** -> the same "Movie night" sheet (it gets its own tab).
+3. Send -> link icon -> copy the link into `watchedFormUrl` in `config.js`.
+4. In the sheet: File -> Share -> **Publish to web** -> choose the new tab -> **CSV** -> Publish -> copy the link into `watchedCsvUrl`.
+5. The page then shows an **I watched one** button. A title typed there moves the matching movie to "Already watched". Matching ignores capitals, accents, punctuation and a leading "The", so "godfather" matches "The Godfather". A title that matches nothing (a typo, or a movie nobody added) still appears under "Already watched", while the original stays in the to-watch list until the spelling matches.
+6. The Watched checkbox column and the check mark typed in a cell keep working as well, if you prefer them.
+
+## 4. Watched movies in the sheet (optional)
 1. Open the response tab for the **Movies** form in the Google Sheet.
 2. In the first empty column to the right of the answers, type the header **Watched**.
 3. Select the cells below it (for example D2:D1000) and choose **Insert -> Checkbox**.
