@@ -495,3 +495,321 @@ details[open] > summary::after { content: "CLOSE \2199"; animation: none; }
 /* Monthly reminder row under the planner */
 .remind { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
 .remind p { margin: 0; font: 400 0.75rem/1.5 var(--mono); letter-spacing: 0.06em; opacity: 0.9; }
+
+/* =====================================================================
+   Cinema pass: more movie, same cyber HUD (black / acid lime / electric blue)
+   ===================================================================== */
+[hidden] { display: none !important; }
+
+/* film grain + CRT scanlines over the whole page (purely decorative) */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.07;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* header: camera-viewfinder corners around the title, mono tagline, cinema ticker */
+.hero-title::before, .hero-title::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 0 solid var(--lime);
+  pointer-events: none;
+}
+.hero-title::before { top: 12px; left: -6px; border-width: 3px 0 0 3px; }
+.hero-title::after { bottom: 6px; right: 0; border-width: 0 3px 3px 0; }
+.tagline {
+  margin: 0;
+  font: 700 0.8rem/1.5 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.play { color: var(--lime); margin-right: 4px; }
+.ticker {
+  margin-top: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 3px solid var(--blue);
+  border-bottom: 3px solid var(--blue);
+  padding: 9px 0;
+}
+.ticker-track { display: inline-flex; animation: ticker 30s linear infinite; }
+.ticker-track span { font: 700 0.72rem/1 var(--mono); letter-spacing: 0.22em; color: var(--lime); }
+@keyframes ticker { to { transform: translateX(-50%); } }
+
+/* sections: stacked on phones, side by side on wide screens */
+#movies, #dates { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+#movies > ul, #dates > ul, .watched-block, .remind { width: 100%; }
+@media (min-width: 1000px) {
+  .hero, main { max-width: 1040px; }
+  main { grid-template-columns: 1fr 1fr; align-items: start; }
+  #dogs { grid-column: 1 / -1; }
+}
+/* sprocket holes along the bottom of each blue title bar */
+.panel::before {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0 7px, transparent 7px 15px) left bottom / 100% 5px no-repeat,
+    var(--blue);
+}
+.button-row { align-items: center; }
+
+/* movie tickets: notched edges, perforated stub with the number */
+.tickets li, .showtimes li {
+  min-height: 58px;
+  padding: 12px 16px 12px 72px;
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.06), transparent 40%), #141414;
+  border: 0;
+  border-radius: 6px;
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+.tickets li:hover, .showtimes li:hover { background: linear-gradient(90deg, rgba(198, 255, 0, 0.14), transparent 55%), #181818; }
+.tickets li::after, .showtimes li::after {
+  content: "";
+  position: absolute;
+  left: 58px; top: 8px; bottom: 8px;
+  border-left: 2px dashed rgba(198, 255, 0, 0.45);
+}
+.tickets li::before, .showtimes li::before {
+  content: "N\B0\A" counter(n, decimal-leading-zero);
+  white-space: pre;
+  left: 0; top: 50%;
+  width: 58px;
+  transform: translateY(-50%);
+  text-align: center;
+  font: 700 0.72rem/1.25 var(--mono);
+}
+.tickets li.done { opacity: 0.55; text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.5); }
+.tickets li.done::before { content: "\2713\A SEEN"; }
+.planner-list li.muted { -webkit-mask: none; mask: none; padding: 12px 14px; background: transparent; }
+.planner-list li.muted::after { content: none; }
+
+/* showtimes: big day number + month in the stub, weekday and a countdown in the row */
+.showtimes li.showtime::before { content: none; }
+.showtimes li.has-cal { border-radius: 6px; }
+.stub {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.stub b { font: 900 1.45rem/1 var(--display); color: #fff; text-shadow: 2px 2px 0 var(--blue); }
+.stub i { font: 700 0.6rem/1 var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); }
+.soon {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  border: 1px solid var(--lime);
+  color: var(--lime);
+  font: 700 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.soon.hot { background: var(--lime); color: #000; }
+
+/* the watched list reads like the end credits */
+.watched-block h3 { color: rgba(255, 255, 255, 0.7); }
+
+/* monthly reminder as a "coming soon" card */
+.remind {
+  margin-top: 6px;
+  padding: 14px;
+  border: 1px dashed rgba(198, 255, 0, 0.55);
+  border-top: 1px dashed rgba(198, 255, 0, 0.55);
+}
+.remind-label { font-weight: 700 !important; color: var(--lime); letter-spacing: 0.18em !important; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+@media (max-width: 420px) {
+  .tagline { font-size: 0.68rem; letter-spacing: 0.08em; }
+}
+@media (min-width: 1000px) {
+  .hero-title .glitter-wrap { max-width: 640px; }
+}
+
+/* "Next showing" banner under the ticker */
+.next-show {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--lime);
+  background: rgba(198, 255, 0, 0.06);
+  box-shadow: 4px 4px 0 var(--blue);
+}
+.ns-label { font: 700 0.68rem/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--lime); }
+.ns-label::before { content: "\25CF  "; animation: rec 1.6s steps(1, end) infinite; }
+.ns-when { font: 900 1.05rem/1.2 var(--display); text-transform: uppercase; letter-spacing: 0.02em; }
+.next-show .soon { margin-left: 0; }
+.next-show .cal-row { margin-top: 0; }
+
+/* "Pick for me" spin */
+.tickets li.flash { background: linear-gradient(90deg, rgba(198, 255, 0, 0.35), rgba(198, 255, 0, 0.08)), #141414; }
+.tickets li.picked {
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.3), rgba(31, 63, 255, 0.25)), #141414;
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}
+.pick-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  background: var(--blue);
+  color: #fff;
+  font: 700 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.chip:disabled { opacity: 0.6; cursor: wait; }
+@media (prefers-reduced-motion: reduce) { .ns-label::before { animation: none; } }
+
+/* stats line under the ticker */
+.stats {
+  margin: 12px 0 0;
+  font: 700 0.68rem/1.5 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* both free: lime ticket, tag, and banner tag */
+.both-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  vertical-align: 2px;
+  background: var(--blue);
+  color: #fff;
+  font: 800 0.58rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+}
+.showtimes li.both {
+  background: linear-gradient(90deg, rgba(198, 255, 0, 0.22), rgba(198, 255, 0, 0.04) 60%), #141414;
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}
+.next-show .both-tag { margin-left: 0; }
+.ns-only { font: 400 0.7rem/1.2 var(--mono); letter-spacing: 0.06em; opacity: 0.8; }
+
+/* "Who's free" board: next five weeks */
+.free-board { width: 100%; display: grid; gap: 10px; }
+.board-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.board-dow { text-align: center; font: 700 0.6rem/1.6 var(--mono); letter-spacing: 0.12em; color: var(--lime); text-transform: uppercase; }
+.board-day {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font: 700 0.72rem/1 var(--mono);
+}
+.board-day b { font-weight: 700; }
+.board-day.past { opacity: 0.3; }
+.board-day.today { border-color: #fff; }
+.board-day.free { border-color: rgba(198, 255, 0, 0.6); }
+.board-day.both { background: var(--lime); color: #000; border-color: var(--lime); box-shadow: 3px 3px 0 var(--blue); }
+.board-day i { display: flex; gap: 2px; }
+.board-day i span { width: 6px; height: 6px; border-radius: 50%; }
+.board-day.both i span { box-shadow: 0 0 0 1px #000; }
+.board-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 700 0.62rem/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.board-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.board-legend i { width: 8px; height: 8px; border-radius: 50%; }
+.legend-both::before { content: ""; width: 12px; height: 12px; background: var(--lime); box-shadow: 2px 2px 0 var(--blue); }
+
+/* ratings and ČSFD on movie tickets */
+.stars { margin-left: 8px; color: var(--lime); letter-spacing: 0.06em; font-size: 0.85rem; }
+.tickets li.done .stars { text-decoration: none; display: inline-block; opacity: 1; }
+.tix-row { display: flex; gap: 6px; margin-top: 6px; }
+.chip.mini { min-height: 26px; padding: 0 8px; font-size: 0.56rem; }
+.tickets li.done { text-decoration: none; }
+.tickets li.done > small { text-decoration: line-through; }
+
+/* Pixel Tara */
+.tara {
+  position: fixed;
+  left: 0;
+  bottom: 34px;
+  z-index: 45;
+  width: 84px;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform: translateX(-90px);
+}
+.tara svg { display: block; width: 100%; height: 100%; filter: drop-shadow(2px 2px 0 rgba(31, 63, 255, 0.9)); }
+.tara .legs-1 { visibility: hidden; }
+.tara.walking { animation: tara-walk 16s linear 1; }
+.tara.walking .legs-0 { animation: legs-a 0.36s linear infinite; }
+.tara.walking .legs-1 { animation: legs-b 0.36s linear infinite; }
+@keyframes tara-walk { from { transform: translateX(-90px); } to { transform: translateX(calc(100vw + 20px)); } }
+@keyframes legs-a { 0%, 49% { visibility: visible; } 50%, 100% { visibility: hidden; } }
+@keyframes legs-b { 0%, 49% { visibility: hidden; } 50%, 100% { visibility: visible; } }
+.tara.sitting { left: auto; right: 12px; transform: none; }
+.tara-bubble {
+  position: absolute;
+  left: 56px; bottom: 34px;
+  padding: 3px 6px;
+  background: #fff;
+  color: #000;
+  font: 800 0.6rem/1 var(--mono);
+  letter-spacing: 0.06em;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.tara.barking .tara-bubble { opacity: 1; }
+.tara:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* lists never squash their rows: long movie lists scroll, showtimes simply grow */
+.tickets, .showtimes { display: flex; flex-direction: column; gap: 8px; }
+.tickets > li, .showtimes > li { flex-shrink: 0; }
+.tickets { max-height: 460px; }
+.showtimes { max-height: none; overflow: visible; }
+
+/* long lists: no scroll box, a "Show all" button instead */
+.tickets { max-height: none; overflow: visible; }
+.more-toggle { margin-top: -4px; }
+
+/* "usually free" days on the board (from weekday rows in the Free days tab) */
+.board-day.usual { border-style: dashed; border-color: rgba(198, 255, 0, 0.45); }
+.board-day.usual i span { opacity: 0.55; }
+.board-day.usual-both { background: repeating-linear-gradient(-45deg, rgba(198, 255, 0, 0.28) 0 4px, transparent 4px 8px), #121212; border: 1px dashed var(--lime); }
+.legend-usual::before { content: ""; width: 12px; height: 12px; border: 1px dashed var(--lime); background: repeating-linear-gradient(-45deg, rgba(198, 255, 0, 0.35) 0 3px, transparent 3px 6px); }
+
+/* "Lock it in" */
+.lock-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; width: 100%; }
+.chip.lock { background: var(--lime); color: #000; box-shadow: 3px 3px 0 var(--blue); }
+.chip.lock:hover { background: #fff; }
+.locked { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.locked-line { width: 100%; font: 700 0.7rem/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); }
+.locked-line b { color: #fff; font-family: var(--display); font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; }
+.locked .cal-row { margin-top: 0; }
+.next-show .lock-wrap { width: auto; margin-top: 0; }
+@media (max-width: 360px) {
+  .tagline { font-size: 0.6rem; letter-spacing: 0.04em; }
+}

@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Movie Night Planner</title>
+  <meta name="theme-color" content="#060606">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,32 +17,34 @@
       <h1 class="pixel-title" data-sparkle>Movie Night</h1>
       <span class="star star-b" aria-hidden="true">&#10022;</span>
     </div>
-    <p class="tagline">Pick a movie. Pick a day. Press play.</p>
-    <div class="hero-rule"></div>
+    <p class="tagline"><span class="play" aria-hidden="true">&#9654;</span> Pick a movie. Pick a day. Press play.</p>
+    <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>NOW SHOWING &#10022; MOVIE NIGHT &#10022; STARRING TARA &#10022; POPCORN REQUIRED &#10022; NO SPOILERS &#10022; </span><span>NOW SHOWING &#10022; MOVIE NIGHT &#10022; STARRING TARA &#10022; POPCORN REQUIRED &#10022; NO SPOILERS &#10022; </span></div></div>
+    <p id="stats" class="stats" hidden></p>
+    <div id="next-show" class="next-show" aria-live="polite" hidden></div>
   </header>
 
   <main>
-    <section id="movies" class="panel" data-label="/01 PLANNER">
-      <div class="planner">
-        <div class="planner-col">
-          <h2>Movies to watch</h2>
-          <ul id="movie-list" class="planner-list"><li class="muted">Loading...</li></ul>
-          <div class="button-row">
-            <a id="add-movie" class="button" href="#" target="_blank" rel="noopener">+ Add a movie</a>
-            <a id="open-sheet" class="button secondary" href="#" target="_blank" rel="noopener" hidden>Tick watched in the sheet</a>
-          </div>
-          <div id="watched-block" class="watched-block" hidden>
-            <h3>Already watched</h3>
-            <ul id="watched-list" class="planner-list"></ul>
-          </div>
-        </div>
-        <div class="planner-col">
-          <h2>Dates we're free</h2>
-          <ul id="date-list" class="planner-list"><li class="muted">Loading...</li></ul>
-          <a id="add-date" class="button" href="#" target="_blank" rel="noopener">+ Add a free date</a>
-        </div>
+    <section id="movies" class="panel" data-label="/01 NOW SHOWING">
+      <h2>Movies to watch</h2>
+      <ul id="movie-list" class="planner-list tickets"><li class="muted">Loading...</li></ul>
+      <div class="button-row">
+        <a id="add-movie" class="button" href="#" target="_blank" rel="noopener">+ Add a movie</a>
+        <button id="pick-movie" type="button" class="chip" hidden>&#127922; Pick for me</button>
+        <a id="open-sheet" class="chip" href="#" target="_blank" rel="noopener" hidden>&#10003; Mark watched in the sheet</a>
       </div>
+      <div id="watched-block" class="watched-block" hidden>
+        <h3>Already watched // The end</h3>
+        <ul id="watched-list" class="planner-list tickets"></ul>
+      </div>
+    </section>
+
+    <section id="dates" class="panel" data-label="/02 SHOWTIMES">
+      <h2>Dates we're free</h2>
+      <div id="free-board" class="free-board" aria-label="Who is free in the next five weeks" hidden></div>
+      <ul id="date-list" class="planner-list showtimes"><li class="muted">Loading...</li></ul>
+      <a id="add-date" class="button" href="#" target="_blank" rel="noopener">+ Add a free date</a>
       <div class="remind">
+        <p class="remind-label">Coming soon // monthly reminder</p>
         <p>Easy to forget? Get one reminder a month, with a link back here.</p>
         <div class="cal-row">
           <button id="remind-ics" type="button" class="chip">Remind me monthly</button>
@@ -49,7 +53,7 @@
       </div>
     </section>
 
-    <section id="dogs" class="panel" data-label="/02 PHOTOS">
+    <section id="dogs" class="panel" data-label="/03 TARA ON FILM">
       <details>
         <summary><h2>In case you'll miss your love</h2></summary>
         <!-- Photos dog1.jpg ... dog7.jpg are placed here in random order by planner.js -->

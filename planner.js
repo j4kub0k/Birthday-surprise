@@ -116,12 +116,14 @@
   }
 
   // Which photos exist? Try dog1.jpg ... dog12.jpg once and keep the ones that load.
-  const ready = Promise.all(Array.from({ length: MAX }, (_, i) => new Promise((resolve) => {
+  // Done the first time the corner is opened, so a visit that never opens it downloads no photos.
+  let ready = null;
+  const findPhotos = () => ready || (ready = Promise.all(Array.from({ length: MAX }, (_, i) => new Promise((resolve) => {
     const probe = new Image();
     probe.onload = () => resolve(i + 1);
     probe.onerror = () => resolve(0);
     probe.src = 'images/dog' + (i + 1) + '.jpg';
-  }))).then((found) => found.filter(Boolean));
+  }))).then((found) => found.filter(Boolean)));
 
   // Lay everything out again at random; runs when the corner is opened.
   function layout(available) {
@@ -221,8 +223,12 @@
     gallery.appendChild(foot);
   }
 
-  ready.then(layout);
-  if (details) details.addEventListener('toggle', () => { if (details.open) ready.then(layout); });
+  if (details) {
+    details.addEventListener('toggle', () => { if (details.open) findPhotos().then(layout); });
+    if (details.open) findPhotos().then(layout);
+  } else {
+    findPhotos().then(layout);
+  }
 })();
 
 // Give every heading its own random sticker look: fill/ink/outline colours, hard shadow and a slight tilt.
@@ -331,7 +337,7 @@
     const dt = new Date(y, m - 1, d);
     return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? dt : null;
   }
-  const SLASH = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/;
+  const SLASH = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4}|\d{2})\b/;
   // Slash dates are ambiguous (3/4 = 3 April or March 4). Look at all dates: a part above 12 settles it.
   function detectOrder(strings) {
     let dmy = false, mdy = false;
@@ -345,16 +351,41 @@
     if (mdy && !dmy) return 'mdy';
     return cfg.dateOrder === 'mdy' ? 'mdy' : 'dmy';
   }
+  const fullYear = (y) => (y < 100 ? 2000 + y : y);
+  // English and Czech month names (Czech without accents, any case ending): "October", "Oct", "rijna", "listopadu"
+  const MONTH_NAMES = [
+    ['jan', 'leden', 'ledna'], ['feb', 'unor', 'unora'], ['mar', 'brezen', 'brezna'], ['apr', 'duben', 'dubna'],
+    ['may', 'kveten', 'kvetna'], ['jun', 'cerven', 'cervna'], ['jul', 'cervenec', 'cervence'], ['aug', 'srpen', 'srpna'],
+    ['sep', 'zari'], ['oct', 'rijen', 'rijna'], ['nov', 'listopad', 'listopadu'], ['dec', 'prosinec', 'prosince'],
+  ];
+  function monthFromName(word) {
+    const w = word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.$/, '');
+    if (w.length < 3 || !/^[a-z]+$/.test(w)) return 0;
+    if (w.startsWith('cervenc')) return 7; // Czech July, checked before June ("cerven")
+    for (let i = 0; i < 12; i++) {
+      const [en, ...cz] = MONTH_NAMES[i];
+      if (w.startsWith(en) || cz.includes(w)) return i + 1;
+    }
+    return 0;
+  }
   function parseDate(str, order) {
-    const s = str.trim();
+    let s = str.trim();
+    // a leading weekday ("pá 24. 10. 2026", "Friday, October 24, 2026") is dropped
+    const first = s.split(/[\s,]+/)[0];
+    if (first && /^[^\d]+$/.test(first) && weekdayOf(first.replace(/[.,]$/, '')) >= 0) s = s.slice(first.length).replace(/^[\s,.]+/, '');
     let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s) || /^(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(s);
     if (m) return validDate(+m[1], +m[2], +m[3]);
-    m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})/.exec(s); // 14.11.2026 is always day first
-    if (m) return validDate(+m[3], +m[2], +m[1]);
+    m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4}|\d{2})\b/.exec(s); // 14.11.2026 is always day first
+    if (m) return validDate(fullYear(+m[3]), +m[2], +m[1]);
     m = SLASH.exec(s);
-    if (m) return order === 'mdy' ? validDate(+m[3], +m[1], +m[2]) : validDate(+m[3], +m[2], +m[1]);
+    if (m) return order === 'mdy' ? validDate(fullYear(+m[3]), +m[1], +m[2]) : validDate(fullYear(+m[3]), +m[2], +m[1]);
+    m = /^(\d{1,2})\.?\s+([^\d\s.,]+)\.?,?\s+(\d{4})\b/.exec(s); // 24 October 2026, 24. října 2026
+    if (m && monthFromName(m[2])) return validDate(+m[3], monthFromName(m[2]), +m[1]);
+    m = /^([^\d\s.,]+)\.?\s+(\d{1,2}),?\s+(\d{4})\b/.exec(s); // October 24, 2026
+    if (m && monthFromName(m[1])) return validDate(+m[3], monthFromName(m[1]), +m[2]);
     return null; // free text such as "Fri 14 Nov evening": kept in the list, never hidden
   }
+
   const isTrue = (v) => /^(true|yes|y|x|1|\u2713|\u2714|watched)$/i.test((v || '').trim());
 
   // ---- "Add to calendar": an .ics file (works in Google, Apple and Outlook calendars) with built-in alerts,
@@ -376,10 +407,10 @@
     out.push(rest);
     return out.join('\r\n');
   }
-  function eventInfo(date, note) {
-    const title = cfg.eventTitle || 'Movie night \uD83C\uDFAC';
+  function eventInfo(date, note, customTitle) {
+    const title = customTitle || cfg.eventTitle || 'Movie night \uD83C\uDFAC';
     const pageUrl = /^https?:/.test(location.href) ? location.origin + location.pathname : '';
-    const lines = ['Pick a movie from the list and press play.'];
+    const lines = [customTitle ? 'It is locked in. Popcorn ready.' : 'Pick a movie from the list and press play.'];
     if (note) lines.push(note);
     if (pageUrl) lines.push(pageUrl);
     return { title, description: lines.join('\n'), pageUrl };
@@ -405,8 +436,8 @@
       'END:VEVENT', 'END:VCALENDAR',
     ].map(foldLine).join('\r\n') + '\r\n';
   }
-  function calendarButtons(date, note) {
-    const info = eventInfo(date, note);
+  function calendarButtons(date, note, customTitle) {
+    const info = eventInfo(date, note, customTitle);
     const row = document.createElement('span');
     row.className = 'cal-row';
     const ics = document.createElement('button');
@@ -504,27 +535,381 @@
       '&details=' + encodeURIComponent(info.description);
   }
 
+  // "TONIGHT" / "TOMORROW" / "IN 5 DAYS" tag for a date
+  function countdown(date, today) {
+    const days = Math.round((date - today) / 86400000);
+    const soon = document.createElement('span');
+    soon.className = 'soon' + (days <= 1 ? ' hot' : '');
+    soon.textContent = days === 0 ? 'TONIGHT' : days === 1 ? 'TOMORROW' : 'IN ' + days + ' DAYS';
+    return soon;
+  }
+  const rowDetails = (r) => r.slice(2).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
+
+  // ---- "Pick for me": spins through the movie tickets and lands on a random one ----
+  function wirePicker() {
+    const btn = document.getElementById('pick-movie');
+    const list = document.getElementById('movie-list');
+    if (!btn || !list) return;
+    btn.addEventListener('click', () => {
+      const items = Array.from(list.querySelectorAll('li:not(.muted)'));
+      if (items.length < 2) return;
+      items.forEach((li) => { li.classList.remove('picked', 'flash'); const t = li.querySelector('.pick-tag'); if (t) t.remove(); });
+      const winner = Math.floor(Math.random() * items.length);
+      const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // at least ~16 flashes, ending exactly on the winner; the whole spin always takes about 2.5 s
+      const n = items.length;
+      const steps = still ? 0 : winner + n * Math.max(1, Math.ceil((16 - winner) / n));
+      const weights = Array.from({ length: steps }, (_, k) => 1 + 6 * Math.pow(k / Math.max(1, steps), 3)); // slows down at the end
+      const total = weights.reduce((a, b) => a + b, 0) || 1;
+      let i = 0;
+      btn.disabled = true;
+      const land = () => {
+        items.forEach((li) => li.classList.remove('flash'));
+        const li = items[winner];
+        if (li.hidden) expandList(list);
+        li.classList.add('picked');
+        const tag = document.createElement('span');
+        tag.className = 'pick-tag';
+        tag.textContent = "TONIGHT'S PICK";
+        li.insertBefore(tag, li.querySelector('small'));
+        li.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
+        btn.disabled = false;
+      };
+      const tick = () => {
+        if (i >= steps) { land(); return; }
+        items.forEach((li) => li.classList.remove('flash'));
+        items[i % items.length].classList.add('flash');
+        i++;
+        setTimeout(tick, 2500 * weights[i - 1] / total); // slows down like a wheel
+      };
+      tick();
+    });
+  }
+
+  // ---- column helpers, ratings, ČSFD ----
+  const findCol = (header, re, fallback) => { const i = header.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
+  // "4", "4/5", "8/10", "4,5" or "★★★★" -> a number from 0 to 5
+  function parseRating(v) {
+    const s = String(v || '').trim();
+    if (!s) return null;
+    const stars = (s.match(/★/g) || []).length;
+    if (stars) return Math.min(5, stars);
+    const m = /(\d+(?:[.,]\d+)?)/.exec(s);
+    if (!m) return null;
+    let n = parseFloat(m[1].replace(',', '.'));
+    if (/\/\s*10\b/.test(s) || n > 5) n /= 2;
+    return n > 0 ? Math.min(5, n) : null;
+  }
+  const starsText = (n) => { const r = Math.round(n); return '★'.repeat(r) + '☆'.repeat(5 - r); };
+  const csfdUrl = (title) => 'https://www.csfd.cz/hledat/?q=' + encodeURIComponent(title);
+  const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  let movieTitles = []; // movies still to watch, used by "Lock it in"
+
+  // ---- "Free days" tab: Date | Jakub | Her (checkboxes). Optional "Jakub (evening)" columns, a "Note" column,
+  //      and rows with a weekday instead of a date ("Friday") for days you're usually free ----
+  const WEEKDAYS = [
+    ['sunday', 'sun', 'nedele', 'ne'], ['monday', 'mon', 'pondeli', 'po'], ['tuesday', 'tue', 'tues', 'utery', 'ut'],
+    ['wednesday', 'wed', 'streda', 'st'], ['thursday', 'thu', 'thur', 'thurs', 'ctvrtek', 'ct'],
+    ['friday', 'fri', 'patek', 'pa'], ['saturday', 'sat', 'sobota', 'so'],
+  ];
+  function weekdayOf(text) {
+    const t = text.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/^(every|each|usually|kazd[yae]|vzdy)\s+/, '').replace(/s$/, '');
+    return WEEKDAYS.findIndex((names) => names.includes(t) || names.includes(t + 's'));
+  }
+  // "Jakub", "Jakub (evening)" or "Jakub - evening" -> { name, slot }
+  function splitHeader(h) {
+    const m = /^(.*?)\s*(?:\(([^)]*)\)|[-–:]\s*(.+))\s*$/.exec(h.trim());
+    if (m && m[1]) return { name: m[1].trim(), slot: (m[2] || m[3] || '').trim().toLowerCase() };
+    return { name: h.trim(), slot: '' };
+  }
+  // who ticked, and whether everybody shares a time slot (= both free)
+  function summarize(ticks, people, slots, note) {
+    const names = people.filter((p) => ticks.some((c) => c.name === p));
+    const shared = people.length >= 2 ? slots.filter((s) => people.every((p) => ticks.some((c) => c.name === p && c.slot === s))) : [];
+    const both = shared.length > 0;
+    const slotText = shared.filter(Boolean).join(' / ');
+    const who = both
+      ? names.join(' + ') + (slotText ? ' · ' + slotText : '')
+      : names.map((n) => {
+        const s = ticks.filter((c) => c.name === n && c.slot).map((c) => c.slot);
+        return s.length ? n + ' (' + s.join(' / ') + ')' : n;
+      }).join(' · ');
+    return { names, both, shared, details: [who, note].filter(Boolean).join(' · ') };
+  }
+  function parseGrid(parsed, today) {
+    const header = parsed[0] || [];
+    const di = findCol(header, /date|datum|^\s*(den|day)\s*$|when|kdy/i, 0);
+    const ni = findCol(header, /note|pozn|comment|koment/i, -1);
+    const cols = [];
+    header.forEach((h, i) => {
+      if (i === di || i === ni || !h.trim() || /timestamp|casov|časov/i.test(h)) return;
+      cols.push(Object.assign({ i }, splitHeader(h)));
+    });
+    const people = [];
+    cols.forEach((c) => {
+      const p = people.find((x) => sameName(x, c.name));
+      if (p) c.name = p; else people.push(c.name);
+    });
+    const slots = Array.from(new Set(cols.map((c) => c.slot)));
+    const rows = parsed.slice(1);
+    const order = detectOrder(rows.map((r) => r[di] || ''));
+    const explicit = new Map();
+    const patterns = new Map();
+    rows.forEach((r) => {
+      const cell = (r[di] || '').trim();
+      if (!cell) return;
+      const ticks = cols.filter((c) => isTrue(r[c.i]));
+      const info = summarize(ticks, people, slots, ni >= 0 ? (r[ni] || '').trim() : '');
+      const w = weekdayOf(cell);
+      if (w >= 0) { patterns.set(w, info); return; }
+      const d = parseDate(cell, order);
+      if (!d || d < today) return;
+      const key = 'grid|' + ymd(d) + '|' + ticks.map((c) => c.i).join(',');
+      explicit.set(ymd(d), Object.assign(info, { date: d, r, title: cell, key, keys: [key] }));
+    });
+    const dated = Array.from(explicit.values()).filter((e) => e.names.length);
+    return { dated, people, hints: { explicit, patterns } };
+  }
+
+  // ---- "Show all": long lists show the first few rows and a button instead of a scroll box ----
+  function collapseList(ul, n) {
+    const old = document.getElementById(ul.id + '-more');
+    if (old) old.remove();
+    const items = Array.from(ul.children).filter((li) => !li.classList.contains('muted'));
+    items.forEach((li) => { li.hidden = false; });
+    if (items.length <= n + 1) return; // hiding a single row is not worth a button
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip more-toggle';
+    btn.id = ul.id + '-more';
+    const apply = () => {
+      const open = btn.dataset.open === '1';
+      items.forEach((li, i) => { li.hidden = !open && i >= n; });
+      btn.textContent = open ? 'Show less' : 'Show all (' + items.length + ')';
+    };
+    btn.addEventListener('click', () => { btn.dataset.open = btn.dataset.open === '1' ? '' : '1'; apply(); });
+    apply();
+    ul.after(btn);
+  }
+  function expandList(ul) {
+    const btn = document.getElementById(ul.id + '-more');
+    if (btn && btn.dataset.open !== '1') btn.click();
+  }
+
+  // ---- "Lock it in": on a both-free date, pick a movie and make the calendar event for it ----
+  function lockInButton(date, details) {
+    const wrap = document.createElement('span');
+    wrap.className = 'lock-wrap';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip lock';
+    btn.textContent = '🎬 Lock it in';
+    const result = document.createElement('span');
+    result.className = 'locked';
+    result.hidden = true;
+    const roll = () => {
+      const movie = movieTitles.length ? movieTitles[Math.floor(Math.random() * movieTitles.length)] : '';
+      result.innerHTML = '';
+      const line = document.createElement('span');
+      line.className = 'locked-line';
+      line.textContent = movie ? 'Locked in: ' : 'Locked in: movie night (add some movies to pick one)';
+      if (movie) {
+        const b = document.createElement('b');
+        b.textContent = movie;
+        line.appendChild(b);
+      }
+      const again = document.createElement('button');
+      again.type = 'button';
+      again.className = 'chip mini';
+      again.textContent = '🎲 Another';
+      again.hidden = movieTitles.length < 2;
+      again.addEventListener('click', roll);
+      result.append(line, calendarButtons(date, details, movie ? 'Movie night: ' + movie + ' 🎬' : ''), again);
+      result.hidden = false;
+      btn.hidden = true;
+    };
+    btn.addEventListener('click', roll);
+    wrap.append(btn, result);
+    return wrap;
+  }
+
+  // ---- "Who's free" board: the next five weeks, a dot per person, lime when you're both free ----
+  const PERSON_COLORS = ['#c6ff00', '#5b7bff', '#ff4de1', '#ffffff'];
+  function renderBoard(dated, people, today, hints) {
+    const board = document.getElementById('free-board');
+    if (!board) return;
+    board.innerHTML = '';
+    const byDay = new Map(dated.map((e) => [ymd(e.date), e]));
+    const color = (name) => PERSON_COLORS[Math.max(0, people.findIndex((p) => sameName(p, name))) % PERSON_COLORS.length];
+    const start = new Date(today);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // Monday of this week
+    const grid = document.createElement('div');
+    grid.className = 'board-grid';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const h = document.createElement('span');
+      h.className = 'board-dow';
+      h.textContent = d.toLocaleDateString(undefined, { weekday: 'narrow' });
+      grid.appendChild(h);
+    }
+    let usedHints = false;
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const cell = document.createElement('span');
+      let e = byDay.get(ymd(d));
+      let usual = false;
+      // a weekday you're usually free counts as "likely" unless that date has its own row
+      if (!e && hints && d >= today && !hints.explicit.has(ymd(d)) && hints.patterns.has(d.getDay())) {
+        const p = hints.patterns.get(d.getDay());
+        if (p.names.length) { e = p; usual = true; usedHints = true; }
+      }
+      cell.className = 'board-day' + (d < today ? ' past' : '') + (+d === +today ? ' today' : '') +
+        (e ? (usual ? ' usual' : ' free') : '') + (e && e.both ? (usual ? ' usual-both' : ' both') : '');
+      const num = document.createElement('b');
+      num.textContent = d.getDate();
+      cell.appendChild(num);
+      if (e) {
+        const dots = document.createElement('i');
+        (e.names.length ? e.names : ['?']).forEach((n) => {
+          const dot = document.createElement('span');
+          dot.style.background = e.names.length ? color(n) : '#fff';
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+        cell.title = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ': ' +
+          (usual ? 'usually ' : '') + (e.details || 'free');
+      }
+      grid.appendChild(cell);
+    }
+    const legend = document.createElement('div');
+    legend.className = 'board-legend';
+    people.forEach((p) => {
+      const item = document.createElement('span');
+      const dot = document.createElement('i');
+      dot.style.background = color(p);
+      item.append(dot, document.createTextNode(p));
+      legend.appendChild(item);
+    });
+    const bothKey = document.createElement('span');
+    bothKey.className = 'legend-both';
+    bothKey.textContent = 'Both free';
+    legend.appendChild(bothKey);
+    if (usedHints) {
+      const usualKey = document.createElement('span');
+      usualKey.className = 'legend-usual';
+      usualKey.textContent = 'Usually free';
+      legend.appendChild(usualKey);
+    }
+    board.append(grid, legend);
+    board.hidden = false;
+  }
+
+  // ---- header banner: next movie night (both free), a suggestion from usual days, the next free date, or a nudge ----
+  function renderNextShow(dated, today, hints) {
+    const box = document.getElementById('next-show');
+    if (!box) return;
+    box.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'ns-label';
+    box.appendChild(label);
+    const both = dated.filter((e) => e.both).sort((a, b) => a.date - b.date)[0];
+    const any = dated.slice().sort((a, b) => a.date - b.date)[0];
+    const gridMode = !!cfg.availabilityCsvUrl;
+    const tickUrl = cfg.availabilitySheetUrl || cfg.sheetUrl || '#dates';
+    const addChip = (text) => {
+      const add = document.createElement('a');
+      add.className = 'chip';
+      add.textContent = text;
+      add.href = gridMode ? tickUrl : (cfg.datesFormUrl || '#dates');
+      if (/^https?:/.test(add.href) && add.getAttribute('href') !== '#dates') { add.target = '_blank'; add.rel = 'noopener'; }
+      return add;
+    };
+    const when = (date) => {
+      const w = document.createElement('span');
+      w.className = 'ns-when';
+      w.textContent = date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+      return w;
+    };
+    // the next weekday you're both usually free, if that date has no row of its own yet
+    let suggestion = null;
+    if (!both && hints) {
+      for (let i = 0; i < 35 && !suggestion; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        const p = hints.patterns.get(d.getDay());
+        if (p && p.both && !hints.explicit.has(ymd(d))) suggestion = d;
+      }
+    }
+    if (both) {
+      label.textContent = 'Next movie night';
+      const tag = document.createElement('span');
+      tag.className = 'both-tag';
+      tag.textContent = 'BOTH FREE';
+      box.append(when(both.date), countdown(both.date, today), tag, lockInButton(both.date, both.details));
+    } else if (suggestion) {
+      label.textContent = 'Suggested';
+      const why = document.createElement('span');
+      why.className = 'ns-only';
+      why.textContent = "you're usually both free that day";
+      box.append(when(suggestion), countdown(suggestion, today), why, addChip('Confirm in the sheet'));
+    } else if (any) {
+      label.textContent = 'Next free date';
+      box.append(when(any.date), countdown(any.date, today));
+      if (any.names.length === 1) {
+        const only = document.createElement('span');
+        only.className = 'ns-only';
+        only.textContent = 'only ' + any.names[0] + ' so far';
+        box.appendChild(only);
+      }
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : "+ I'm free too"));
+    } else {
+      label.textContent = 'No showtime yet';
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : '+ Add a free date'));
+    }
+    box.hidden = false;
+  }
+
+  function renderStats(results) {
+    const el = document.getElementById('stats');
+    if (!el) return;
+    const movies = results.find((r) => r && r.kind === 'movies');
+    const dates = results.find((r) => r && r.kind === 'dates');
+    const parts = [];
+    if (movies) {
+      if (movies.watchedCol) parts.push(movies.watched + ' watched together');
+      parts.push(movies.waiting + ' waiting');
+    }
+    if (dates) parts.push(dates.both + ' both-free date' + (dates.both === 1 ? '' : 's'));
+    if (movies && movies.ratings.length) {
+      const avg = movies.ratings.reduce((a, b) => a + b, 0) / movies.ratings.length;
+      parts.push('avg ★ ' + avg.toFixed(1));
+    }
+    if (!parts.length) return;
+    el.textContent = parts.join('  ·  ');
+    el.hidden = false;
+  }
+
   async function fillList(listId, csvUrl, emptyText, kind) {
     const list = document.getElementById(listId);
     const watchedList = kind === 'movies' ? document.getElementById('watched-list') : null;
     const watchedBlock = kind === 'movies' ? document.getElementById('watched-block') : null;
-    if (!csvUrl) { setMessage(list, 'Not connected yet.'); return; }
+    const gridMode = kind === 'dates' && !!cfg.availabilityCsvUrl;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (!csvUrl) { setMessage(list, 'Not connected yet.'); return null; }
     try {
       const res = await fetch(csvUrl);
-      if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return; }
+      if (!res.ok) { setMessage(list, 'Could not load the list (Google answered ' + res.status + '). Is the tab published as CSV?'); return null; }
       const text = await res.text();
-      if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return; }
+      if (/^\s*</.test(text)) { setMessage(list, 'That link is a web page, not CSV. Re-publish the tab as "Comma-separated values (.csv)".'); return null; }
       const parsed = parseCsv(text);
       const header = parsed[0] || [];
       const rows = parsed.slice(1).reverse(); // newest first
-      // movies: a column whose header contains "watched" (tick it in the sheet) moves a movie to the watched list
-      const wi = kind === 'movies' ? header.findIndex((h) => /watched/i.test(h)) : -1;
+      // movies: a "Watched" column (checkboxes) moves a movie to the watched list; a "Rating" column (1-5) adds stars
+      const wi = kind === 'movies' ? findCol(header, /watched|vid[eě]n|vid[eě]li/i, -1) : -1;
+      const ri = kind === 'movies' ? findCol(header, /rating|hodnocen|stars|hv[eě]zd/i, -1) : -1;
+      // dates from the form: a "Who" column says who is free, so dates you both picked can be matched
+      const whoI = kind === 'dates' && !gridMode ? findCol(header, /who|kdo|name|jm[eé]no/i, header.length > 2 ? 2 : -1) : -1;
       if (watchedBlock) watchedBlock.hidden = wi < 0;
-      if (!rows.length) {
-        setMessage(list, emptyText);
-        if (watchedList && wi >= 0) setMessage(watchedList, 'Nothing watched yet.');
-        return;
-      }
 
       const seen = readSeen(listId);
       let keptNew = [];
@@ -532,53 +917,161 @@
       const newKeys = [];
       currentKeys[listId] = [];
 
-      const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const entries = [];
-      rows.forEach((r) => {
-        const title = (r[1] || '').trim();
-        if (!title) return;
-        const key = r.join('|');
-        currentKeys[listId].push(key);
-        const entry = { r, key, title, date: kind === 'dates' ? parseDate(title, order) : null, watched: wi >= 0 && isTrue(r[wi]) };
-        if (entry.date && entry.date < today) return; // outdated dates disappear
-        entries.push(entry);
-      });
-      if (kind === 'dates') {
-        // real dates first (soonest first), free-text ones after, both keeping newest-first order otherwise
-        const dated = entries.filter((e) => e.date).sort((a, b) => a.date - b.date);
-        entries.splice(0, entries.length, ...dated, ...entries.filter((e) => !e.date));
+      let entries = [];
+      let dated = [];
+      let people = [];
+      let hints = null;
+      if (gridMode) {
+        const g = parseGrid(parsed, today);
+        dated = g.dated;
+        people = g.people;
+        hints = g.hints;
+        dated.forEach((e) => currentKeys[listId].push(e.key));
+        dated.sort((a, b) => (b.both - a.both) || (a.date - b.date));
+        entries = dated.slice();
+      } else {
+        const order = kind === 'dates' ? detectOrder(rows.map((r) => r[1] || '')) : 'dmy';
+        rows.forEach((r) => {
+          const title = (r[1] || '').trim();
+          if (!title) return;
+          const key = r.join('|');
+          currentKeys[listId].push(key);
+          const entry = {
+            r, key, keys: [key], title,
+            date: kind === 'dates' ? parseDate(title, order) : null,
+            watched: wi >= 0 && isTrue(r[wi]),
+            rating: ri >= 0 ? parseRating(r[ri]) : null,
+            details: r.slice(2).filter((x, i) => i + 2 !== wi && i + 2 !== ri).map((x) => x.trim()).filter(Boolean).join(' · '),
+          };
+          if (entry.date && entry.date < today) return; // outdated dates disappear
+          entries.push(entry);
+        });
+        if (kind === 'dates') {
+          // one showtime per day: entries for the same date are merged, and with two different names it's "both free"
+          const groups = new Map();
+          const textOnly = [];
+          rows.slice().reverse().forEach((r) => { // oldest first, so people get stable colours
+            const who = whoI >= 0 ? (r[whoI] || '').trim() : '';
+            if (who && !people.some((p) => sameName(p, who))) people.push(who.charAt(0).toUpperCase() + who.slice(1));
+          });
+          entries.forEach((e) => {
+            if (!e.date) { textOnly.push(e); return; }
+            const k = ymd(e.date);
+            let g = groups.get(k);
+            if (!g) { g = { r: e.r, title: e.title, date: e.date, keys: [], names: [], notes: [] }; groups.set(k, g); }
+            g.keys.push(e.key);
+            const typed = whoI >= 0 ? (e.r[whoI] || '').trim() : '';
+            const who = typed ? people.find((p) => sameName(p, typed)) : '';
+            if (who && !g.names.includes(who)) g.names.push(who);
+            e.r.slice(2).forEach((x, i) => { const v = x.trim(); if (i + 2 !== whoI && v && !g.notes.includes(v)) g.notes.push(v); });
+          });
+          groups.forEach((g) => g.names.sort((a, b) => people.indexOf(a) - people.indexOf(b)));
+          dated = Array.from(groups.values()).map((g) => Object.assign(g, {
+            key: g.keys[0],
+            both: g.names.length >= 2,
+            details: [g.names.join(' + '), ...g.notes].filter(Boolean).join(' · '),
+          }));
+          dated.sort((a, b) => (b.both - a.both) || (a.date - b.date));
+          entries = [...dated, ...textOnly];
+        }
       }
 
       list.innerHTML = '';
       if (watchedList) watchedList.innerHTML = '';
+      const ratings = [];
       entries.forEach((e) => {
         const li = document.createElement('li');
-        li.textContent = e.date
-          ? e.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-          : e.title;
-        if (!e.watched && ((seen && !seen.includes(e.key)) || keptNew.includes(e.key))) {
-          newKeys.push(e.key);
+        if (e.date) {
+          // showtime: day number and month in the ticket stub, weekday + how soon it is in the row
+          li.classList.add('showtime');
+          if (e.both) li.classList.add('both');
+          const stub = document.createElement('span');
+          stub.className = 'stub';
+          const dnum = document.createElement('b');
+          dnum.textContent = e.date.getDate();
+          const mon = document.createElement('i');
+          mon.textContent = e.date.toLocaleDateString(undefined, { month: 'short' }).replace('.', '');
+          stub.append(dnum, mon);
+          li.appendChild(stub);
+          li.appendChild(document.createTextNode(e.date.toLocaleDateString(undefined, { weekday: 'long' }) +
+            (e.date.getFullYear() !== today.getFullYear() ? ' ' + e.date.getFullYear() : '')));
+          li.appendChild(countdown(e.date, today));
+          if (e.both) {
+            const tag = document.createElement('span');
+            tag.className = 'both-tag';
+            tag.textContent = 'BOTH FREE';
+            li.appendChild(tag);
+          }
+        } else {
+          li.textContent = e.title;
+        }
+        if (e.rating) {
+          ratings.push(e.rating);
+          const st = document.createElement('span');
+          st.className = 'stars';
+          st.textContent = starsText(e.rating);
+          st.setAttribute('aria-label', e.rating + ' out of 5');
+          li.appendChild(st);
+        }
+        const isNew = !e.watched && e.keys.some((k) => (seen && !seen.includes(k)) || keptNew.includes(k));
+        if (isNew) {
+          newKeys.push(...e.keys);
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = 'NEW';
           li.appendChild(badge);
         }
-        const details = e.r.slice(2).filter((x, i) => i + 2 !== wi).map((x) => x.trim()).filter(Boolean).join(' \u00B7 ');
-        if (details) {
+        if (e.details) {
           const small = document.createElement('small');
-          small.textContent = details;
+          small.textContent = e.details;
           li.appendChild(small);
         }
-        if (e.date) { li.classList.add('has-cal'); li.appendChild(calendarButtons(e.date, details)); }
-        if (e.watched) { li.className = 'done'; watchedList.appendChild(li); } else list.appendChild(li);
+        if (e.date) {
+          li.classList.add('has-cal');
+          li.appendChild(e.both ? lockInButton(e.date, e.details) : calendarButtons(e.date, e.details));
+        }
+        if (kind === 'movies') {
+          const row = document.createElement('span');
+          row.className = 'tix-row';
+          const c = document.createElement('a');
+          c.className = 'chip mini';
+          c.href = csfdUrl(e.title);
+          c.target = '_blank';
+          c.rel = 'noopener';
+          c.textContent = 'ČSFD ↗';
+          row.appendChild(c);
+          li.appendChild(row);
+        }
+        if (e.watched) { li.classList.add('done'); watchedList.appendChild(li); } else list.appendChild(li);
       });
       try { sessionStorage.setItem(SEEN_PREFIX + 'new-' + listId, JSON.stringify(newKeys)); } catch (e) { /* ignore */ }
-      if (!list.children.length) setMessage(list, kind === 'dates' ? 'No upcoming dates. Add one!' : emptyText);
+      if (!list.children.length) {
+        setMessage(list, kind === 'dates'
+          ? (gridMode ? 'No free days ticked yet. Tick yours in the sheet!' : (rows.length ? 'No upcoming dates. Add one!' : emptyText))
+          : emptyText);
+      }
       if (watchedList && wi >= 0 && !watchedList.children.length) setMessage(watchedList, 'Nothing watched yet.');
+      collapseList(list, kind === 'dates' ? 5 : 6);
+      if (watchedList) collapseList(watchedList, 4);
+      if (kind === 'dates') {
+        renderNextShow(dated, today, hints);
+        renderBoard(dated, people, today, hints);
+        return { kind, both: dated.filter((e) => e.both).length };
+      }
+      movieTitles = entries.filter((e) => !e.watched).map((e) => e.title);
+      const pick = document.getElementById('pick-movie');
+      if (pick) pick.hidden = movieTitles.length < 2;
+      return {
+        kind,
+        watchedCol: wi >= 0,
+        watched: entries.filter((e) => e.watched).length,
+        waiting: movieTitles.length,
+        ratings,
+      };
     } catch (e) {
       console.error('Planner: failed to load', csvUrl, e);
       setMessage(list, 'Could not reach Google (network or blocked). Try reloading.');
+      return null;
     }
   }
 
@@ -586,8 +1079,91 @@
   const sheetLink = document.getElementById('open-sheet');
   if (cfg.sheetUrl) { sheetLink.href = cfg.sheetUrl; sheetLink.hidden = false; }
   wireReminder();
+  wirePicker();
   setButton('add-movie', cfg.moviesFormUrl);
-  setButton('add-date', cfg.datesFormUrl);
-  fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies');
-  fillList('date-list', cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates');
+  if (cfg.availabilityCsvUrl) {
+    // free days are ticked in the sheet's "Free days" tab, not added with the form
+    const addDate = document.getElementById('add-date');
+    addDate.textContent = '✓ Tick your free days';
+    setButton('add-date', cfg.availabilitySheetUrl || cfg.sheetUrl);
+  } else {
+    setButton('add-date', cfg.datesFormUrl);
+  }
+  Promise.all([
+    fillList('movie-list', cfg.moviesCsvUrl, 'No movies yet. Add the first one!', 'movies'),
+    fillList('date-list', cfg.availabilityCsvUrl || cfg.datesCsvUrl, 'No dates yet. Add one!', 'dates'),
+  ]).then(renderStats);
+})();
+
+// Pixel Tara: a tiny pixel-art dachshund who trots along the bottom of the screen now and then.
+// Tapping her opens the dog corner. With reduced motion she just sits in the corner.
+(function pixelTara() {
+  const B = '#c8692b', D = '#7a3a12', K = '#111', L = '#c6ff00';
+  // 24 x 10 pixels, facing right: long body, tail up, floppy dark ear, lime collar. Two leg frames for the trot.
+  const BODY = [
+    '..................BBB...',
+    '.................BBBBB..',
+    '.................BKBBBBB',
+    '..D.............DDBBBBBK',
+    '...D............DDBBB...',
+    '....BBBBBBBBBBBBLLBB....',
+    '....BBBBBBBBBBBBBBB.....',
+    '.....BBBBBBBBBBBBB......',
+  ];
+  const LEGS = [
+    ['.....BB.......BB........', '.....D........D.........'],
+    ['......BB.......BB.......', '.......D........D.......'],
+  ];
+  const colors = { B, D, K, L };
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 10');
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  svg.setAttribute('aria-hidden', 'true');
+  const paint = (rows, y0, parent) => rows.forEach((row, y) => [...row].forEach((c, x) => {
+    if (!colors[c]) return;
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y0 + y); r.setAttribute('width', 1.02); r.setAttribute('height', 1.02);
+    r.setAttribute('fill', colors[c]);
+    parent.appendChild(r);
+  }));
+  paint(BODY, 0, svg);
+  LEGS.forEach((frame, i) => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'legs legs-' + i);
+    paint(frame, 8, g);
+    svg.appendChild(g);
+  });
+  const tara = document.createElement('button');
+  tara.type = 'button';
+  tara.className = 'tara';
+  tara.setAttribute('aria-label', 'Tara. Open the dog corner');
+  const bubble = document.createElement('span');
+  bubble.className = 'tara-bubble';
+  bubble.textContent = 'woof!';
+  tara.append(svg, bubble);
+  document.body.appendChild(tara);
+
+  tara.addEventListener('click', () => {
+    tara.classList.add('barking');
+    setTimeout(() => tara.classList.remove('barking'), 1200);
+    const dogs = document.getElementById('dogs');
+    const det = dogs && dogs.querySelector('details');
+    if (det && !det.open) det.open = true;
+    if (dogs) dogs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) { tara.classList.add('sitting'); return; }
+  const walk = () => {
+    tara.classList.remove('walking');
+    void tara.offsetWidth; // restart the animation
+    tara.classList.add('walking');
+  };
+  tara.addEventListener('animationend', (e) => {
+    if (e.animationName !== 'tara-walk') return;
+    tara.classList.remove('walking');
+    setTimeout(walk, 25000 + Math.random() * 35000); // next stroll in 25-60 s
+  });
+  setTimeout(walk, 3500);
 })();

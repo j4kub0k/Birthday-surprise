@@ -38,6 +38,30 @@ For each of the two response tabs in the sheet:
 - It only works if the person taps it once. After that, his own calendar keeps reminding him.
 - Change the title with `reminderTitle` and the link with `siteUrl` in `config.js`. The day and time are in `planner.js` (search for `BYDAY=1SA`).
 
+## Free days tab (recommended way to mark free days)
+Instead of the free-dates form, keep one tab where each of you ticks the days you're free.
+
+1. In the "Movie night" spreadsheet, add a tab (the + at the bottom) and name it **Free days**.
+2. Row 1 headers: **Date**, then one column per person, e.g. **Jakub** and **Her** (use your real names). Optional: a **Note** column.
+   - Want evenings and afternoons separately? Use **Jakub (evening)**, **Jakub (afternoon)**, **Her (evening)**, **Her (afternoon)** instead. "Both free" then means you share the same part of the day.
+3. Fill column A with dates: type today's date in A2, select A2, drag the little square at its corner down ~90 rows. Use real dates, **not** a formula like =TODAY(), or the ticks would slide onto other days. Add more rows every few months.
+4. Select the person columns from row 2 down and choose **Insert -> Checkbox**.
+5. Optional "usually free" rows: below the dates, add rows with a weekday instead of a date (e.g. **Friday**, or Czech **pátek**) and tick them. The site shows those days as "usually free" and suggests the next one. A real date row for that day always wins (an unticked row means not free that day).
+6. File -> Share -> **Publish to web** -> choose the **Free days** tab -> **CSV** -> Publish. Paste the link into `availabilityCsvUrl` in `config.js`.
+7. Open the Free days tab, copy the browser address (ends with `#gid=...`) into `availabilitySheetUrl`. The "Tick your free days" buttons open it.
+8. Both of you need edit access to the spreadsheet to tick boxes.
+
+When `availabilityCsvUrl` is set the site uses this tab and ignores the free-dates form. Leave it empty to keep using the form.
+
+## Finding when you're both free (free-dates form)
+- Give the **Free dates** form a second question **Who?** (Multiple choice with your two names is best, so the spelling always matches). The site then merges the same date from both of you into one showtime marked **BOTH FREE**, sorts those first, lights them up in the **Who's free** board (next five weeks, a coloured dot per person), and the header banner shows the next movie night.
+- If only one of you has picked a date, the banner shows it with "only <name> so far" and an "I'm free too" button.
+- Without a Who question everything still works, it just can't tell who is free.
+
+## Ratings and stats
+- In the movies tab, add a column named **Rating** next to Watched and type 1-5 (8/10 and stars like ★★★★ work too). Watched movies show the stars, and the header shows "N watched together · N waiting · N both-free dates · avg ★".
+- Every movie has a **ČSFD** button that searches for it on csfd.cz.
+
 ## Notes
 - The first column of each tab is the automatic timestamp; the site shows the 2nd column as the title and the others as details, newest first.
 - Published sheets and form links are readable by anyone who has the link. Don't put anything private in them.
