@@ -15,10 +15,6 @@ window.PLANNER = {
   siteUrl: 'https://j4kub0k.github.io/Birthday-surprise/',
   // Title of the monthly "Plan a movie night" reminder.
   reminderTitle: 'Plan a movie night \uD83C\uDFAC',
-  // "I watched it" form (one paragraph question: the movies watched, one per line) and its published CSV tab.
-  // Titles typed there move matching movies to "Already watched". Leave empty to hide the button.
-  watchedFormUrl: '',
-  watchedCsvUrl: '',
   // Only used when a slash date like 3/4/2026 is ambiguous: 'dmy' = day first, 'mdy' = month first.
   dateOrder: 'dmy',
 };
