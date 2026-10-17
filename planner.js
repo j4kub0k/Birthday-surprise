@@ -561,7 +561,7 @@
     if (!btn || !list) return;
     btn.addEventListener('click', () => {
       const items = Array.from(list.querySelectorAll('li:not(.muted)'));
-      if (items.length < 2) return;
+      if (items.length < 2) { say(items.length ? 'Add one more movie and I\'ll pick for you \uD83C\uDFB2' : 'Add some movies first and I\'ll pick one \uD83C\uDFB2'); return; }
       items.forEach((li) => { li.classList.remove('picked', 'flash'); const t = li.querySelector('.pick-tag'); if (t) t.remove(); });
       const winner = Math.floor(Math.random() * items.length);
       const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -598,19 +598,19 @@
 
   // ---- column helpers, ratings, ČSFD ----
   const findCol = (header, re, fallback) => { const i = header.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
-  // "4", "4/5", "8/10", "4,5" or "★★★★" -> a number from 0 to 5
+  // ratings are out of 10: "8", "8/10", "7,5" -> 8, 8, 7.5; "4/5" or "★★★★" are doubled to 8
   function parseRating(v) {
     const s = String(v || '').trim();
     if (!s) return null;
     const stars = (s.match(/★/g) || []).length;
-    if (stars) return Math.min(5, stars);
+    if (stars) return Math.min(10, stars * 2);
     const m = /(\d+(?:[.,]\d+)?)/.exec(s);
     if (!m) return null;
     let n = parseFloat(m[1].replace(',', '.'));
-    if (/\/\s*10\b/.test(s) || n > 5) n /= 2;
-    return n > 0 ? Math.min(5, n) : null;
+    if (/\/\s*5\b/.test(s)) n *= 2;
+    return n > 0 ? Math.min(10, n) : null;
   }
-  const starsText = (n) => { const r = Math.round(n); return '★'.repeat(r) + '☆'.repeat(5 - r); };
+  const ratingText = (n) => '\u2605 ' + (Math.round(n * 10) / 10) + '/10';
   const csfdUrl = (title) => 'https://www.csfd.cz/hledat/?q=' + encodeURIComponent(title);
   const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
   let movieTitles = []; // movies still to watch, used by "Lock it in"
@@ -827,13 +827,16 @@
     const both = dated.filter((e) => e.both).sort((a, b) => a.date - b.date)[0];
     const any = dated.slice().sort((a, b) => a.date - b.date)[0];
     const gridMode = !!cfg.availabilityCsvUrl;
-    const tickUrl = cfg.availabilitySheetUrl || cfg.sheetUrl || '#dates';
-    const addChip = (text) => {
+    // ticking a date that's already there happens in the sheet; a brand-new date goes through the form
+    const tickUrl = (gridMode ? cfg.availabilitySheetUrl : cfg.datesSheetUrl) || cfg.sheetUrl || '#dates';
+    const formUrl = gridMode ? tickUrl : (cfg.datesFormUrl || '#dates');
+    const addChip = (text, url) => {
       const add = document.createElement('a');
       add.className = 'chip';
       add.textContent = text;
-      add.href = gridMode ? tickUrl : (cfg.datesFormUrl || '#dates');
-      if (/^https?:/.test(add.href) && add.getAttribute('href') !== '#dates') { add.target = '_blank'; add.rel = 'noopener'; }
+      add.href = url;
+      if (url !== '#dates') { add.target = '_blank'; add.rel = 'noopener'; }
+      add.addEventListener('click', () => say(url === tickUrl ? 'Tick your name next to the date \u2705' : "Add your day, I'll sniff out when you're both free \uD83D\uDC3E"));
       return add;
     };
     const when = (date) => {
@@ -864,7 +867,7 @@
       const why = document.createElement('span');
       why.className = 'ns-only';
       why.textContent = "you're usually both free that day";
-      box.append(when(suggestion), countdown(suggestion, today), why, addChip('Confirm in the sheet'));
+      box.append(when(suggestion), countdown(suggestion, today), why, addChip('Confirm in the sheet', tickUrl));
     } else if (any) {
       label.textContent = 'Next free date';
       box.append(when(any.date), countdown(any.date, today));
@@ -874,10 +877,10 @@
         only.textContent = 'only ' + any.names[0] + ' so far';
         box.appendChild(only);
       }
-      box.appendChild(addChip(gridMode ? 'Tick your free days' : "+ I'm free too"));
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : "\u2713 I'm free too", tickUrl));
     } else {
       label.textContent = 'No showtime yet';
-      box.appendChild(addChip(gridMode ? 'Tick your free days' : '+ Add a free date'));
+      box.appendChild(addChip(gridMode ? 'Tick your free days' : '+ Add a free date', formUrl));
     }
     box.hidden = false;
   }
@@ -895,7 +898,7 @@
     if (dates) parts.push(dates.both + ' both-free date' + (dates.both === 1 ? '' : 's'));
     if (movies && movies.ratings.length) {
       const avg = movies.ratings.reduce((a, b) => a + b, 0) / movies.ratings.length;
-      parts.push('avg ★ ' + avg.toFixed(1));
+      parts.push('avg \u2605 ' + avg.toFixed(1) + '/10');
     }
     if (!parts.length) return;
     el.textContent = parts.join('  ·  ');
@@ -917,7 +920,7 @@
       const parsed = parseCsv(text);
       const header = parsed[0] || [];
       const rows = parsed.slice(1).reverse(); // newest first
-      // movies: a "Watched" column (checkboxes) moves a movie to the watched list; a "Rating" column (1-5) adds stars
+      // movies: a "Watched" column (checkboxes) moves a movie to the watched list; a "Rating" column (1-10) shows its score
       const wi = kind === 'movies' ? findCol(header, /watched|vid[eě]n|vid[eě]li/i, -1) : -1;
       const ri = kind === 'movies' ? findCol(header, /rating|hodnocen|stars|hv[eě]zd/i, -1) : -1;
       // dates from the form: a "Who" column says who is free, so dates you both picked can be matched
@@ -1050,8 +1053,8 @@
           ratings.push(e.rating);
           const st = document.createElement('span');
           st.className = 'stars';
-          st.textContent = starsText(e.rating);
-          st.setAttribute('aria-label', e.rating + ' out of 5');
+          st.textContent = ratingText(e.rating);
+          st.setAttribute('aria-label', e.rating + ' out of 10');
           li.appendChild(st);
         }
         const isNew = !e.watched && e.keys.some((k) => (seen && !seen.includes(k)) || keptNew.includes(k));
@@ -1081,6 +1084,17 @@
           c.rel = 'noopener';
           c.textContent = 'ČSFD ↗';
           row.appendChild(c);
+          if (e.watched && !e.rating && cfg.sheetUrl) {
+            // watched but no score yet: open the sheet to fill in the Rating column
+            const rate = document.createElement('a');
+            rate.className = 'chip mini rate';
+            rate.href = cfg.sheetUrl;
+            rate.target = '_blank';
+            rate.rel = 'noopener';
+            rate.textContent = '\u2605 Rate it';
+            rate.addEventListener('click', () => say('How many out of 10? Write it in the Rating column \u2B50'));
+            row.appendChild(rate);
+          }
           li.appendChild(row);
         }
         if (e.watched) { li.classList.add('done'); watchedList.appendChild(li); } else list.appendChild(li);
@@ -1100,8 +1114,6 @@
         return { kind, both: dated.filter((e) => e.both).length };
       }
       movieTitles = entries.filter((e) => !e.watched).map((e) => e.title);
-      const pick = document.getElementById('pick-movie');
-      if (pick) pick.hidden = movieTitles.length < 2;
       return {
         kind,
         watchedCol: wi >= 0,
@@ -1124,7 +1136,7 @@
   setButton('add-movie', cfg.moviesFormUrl);
   document.getElementById('add-movie').addEventListener('click', () => say('Add a good one! \uD83C\uDFAC'));
   document.getElementById('add-date').addEventListener('click', () => say("Add your day, I'll sniff out when you're both free \uD83D\uDC3E"));
-  sheetLink.addEventListener('click', () => say('Tick it and give it some stars \u2B50'));
+  sheetLink.addEventListener('click', () => say('Tick it and rate it out of 10 \u2B50'));
   if (cfg.availabilityCsvUrl) {
     // free days are ticked in the sheet's "Free days" tab, not added with the form
     const addDate = document.getElementById('add-date');

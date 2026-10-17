@@ -9,6 +9,8 @@ window.PLANNER = {
   // The Google Sheet's own link (open it in the browser and copy the address bar, ends in /edit...).
   // Shows a "Tick watched in the sheet" button under the movie list. Leave empty to hide the button.
   sheetUrl: 'https://docs.google.com/spreadsheets/d/1-PAB5xC_cbaK7Uq_JHguQt2GyoEufsphERUM84tVbzQ/edit?gid=232171872#gid=232171872',
+  // The same sheet opened on the free-dates tab, so "I'm free too" can tick your name on a date someone already added.
+  datesSheetUrl: 'https://docs.google.com/spreadsheets/d/1-PAB5xC_cbaK7Uq_JHguQt2GyoEufsphERUM84tVbzQ/edit?gid=1440545244#gid=1440545244',
   // Title of the calendar event created by the "Add to calendar" buttons on upcoming dates.
   eventTitle: 'Movie night \uD83C\uDFAC',
   // Address of this site, put into the calendar reminders so they link back here. Leave empty to use the address the page is opened on.

@@ -25,6 +25,7 @@ For each of the two response tabs in the sheet:
 3. Select the cells below it (for example D2:D1000) and choose **Insert -> Checkbox**.
 4. Tick a movie's box when you have watched it. The site moves it to "Already watched".
 5. Paste the sheet's normal link (the address bar while it is open, `https://docs.google.com/spreadsheets/d/.../edit`) into `sheetUrl` in `config.js`. The site then shows a "Tick watched in the sheet" button that opens it. The person must be allowed to edit the sheet (Share -> add her email, or "anyone with the link can edit", which means anyone with the link can change it).
+6. Open the free-dates tab, copy the address bar (it ends in `#gid=...` for that tab) and paste it into `datesSheetUrl`. The "✓ I'm free too" button opens it so the other person can tick their name on a date that's already there.
 6. If there is no column with "watched" in its header, the watched list stays hidden.
 
 ## Dates
@@ -61,7 +62,7 @@ Who is free on a date can come from the form, from the sheet, or both:
 - If only one of you is free on a date, the banner shows "only <name> so far" with an "I'm free too" button.
 
 ## Ratings and stats
-- In the movies tab, add a column named **Rating** next to Watched and type 1-5 (8/10 and stars like ★★★★ work too). Watched movies show the stars, and the header shows "N watched together · N waiting · N both-free dates · avg ★".
+- In the movies tab, add a column named **Rating** next to Watched and type a score from 1 to 10 (7.5 and 8/10 work too). Watched movies show it as ★ 8/10, a watched movie without a score gets a "★ Rate it" button that opens the sheet, and the header shows "N watched together · N waiting · N both-free dates · avg ★ x/10".
 - Every movie has a **ČSFD** button that searches for it on csfd.cz.
 
 ## Notes
